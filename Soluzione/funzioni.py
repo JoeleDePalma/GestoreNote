@@ -4,7 +4,7 @@ import os
 from time import sleep
 import subprocess
 import getpass
-
+#aggiungo un commento
 # Directory principali per la gestione degli appunti
 directory_tutti_gli_appunti = Path(__file__).parent / "appunti"
 directory_appunti_pubblici = directory_tutti_gli_appunti / "pubblici"
