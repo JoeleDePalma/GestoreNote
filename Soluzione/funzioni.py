@@ -21,10 +21,12 @@ import logging
 
 # Configurazione del logging
 logging.basicConfig(
-    level=logging.ERROR,
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    filename=str(directory_logs / "file_logs.log")
+    filename=str(directory_logs / "file_logs.log"),
+    filemode="a"
 )
+
 account_verificato = False
 appunti_esistenti = False
 credenziali_esistenti = False
@@ -44,13 +46,16 @@ def verifica_privati(credenziali_priv):
         if password_priv == credenziali_priv:
             sleep(0.5)
             print("Accesso autorizzato")
+            logging.info("Accesso autorizzato agli appunti privati")
             return True
         else:
             if i < 4:
                 print("Password errata, accesso rifiutato, riprova")
+                logging.warning("Password errata inserita per gli appunti privati")
             else:
                 sleep(0.5)
                 print("Troppi tentativi falliti")
+                logging.error("Troppi tentativi falliti per l'accesso agli appunti privati")
                 exit()
 
 
@@ -125,6 +130,7 @@ def appunti_considerati(del_mod):
             if priv_publ < 1 or priv_publ > 2:
                 sleep(0.5)
                 print("Inserisci un numero valido")
+                logging.error("Errore di input: non è stato inserito un numero valido")
             else:
                 if priv_publ == 1:
                     verifica_esistenza()
@@ -133,6 +139,7 @@ def appunti_considerati(del_mod):
         except ValueError:
             sleep(0.5)
             print("Inserisci un numero!")
+            logging.error("Errore di input: non è stato inserito un numero")
 
         print(f"Inserisci il numero corrispondente agli appunti {del_mod}:")
     
@@ -148,10 +155,11 @@ def appunti_considerati(del_mod):
             appunti_da_considerare = int(input())
             
             if 1 <= appunti_da_considerare <= len(lista_appunti_sep[priv_publ-1]): break
-            else: print("Numero non valido, riprova.")
+            else: print("Numero non valido, riprova."); logging.error("Numero non valido inserito per la selezione degli appunti")
                 
         except ValueError:
             print("Inserisci un numero valido.")
+            logging.error("Errore di input: non è stato inserito un numero valido")
 
     return appunti_da_considerare, priv_publ
 
@@ -172,6 +180,7 @@ def elimina_appunti():
         appunti = FileAppunti(directory_appunti_pubblici/lista_appunti_sep[1][appunti_da_eliminare-1])
         appunti.elimina(lista_appunti_sep[1], appunti_da_eliminare-1, directory_appunti_pubblici)
 
+    logging.info(f"Appunti eliminati: {lista_appunti_sep[priv_publ-1][appunti_da_eliminare-1]} in {'privati' if priv_publ == 1 else 'pubblici'}")
 
 class File:
     """
@@ -220,6 +229,7 @@ class FileAppunti(File):
             if nuova_modifica != ultima_modifica:
                 print("Il file è stato modificato")
                 ultima_modifica = nuova_modifica
+                logging.info(f"File {self.directory} modificato")
                 
                 
     def crea(self):
@@ -229,27 +239,10 @@ class FileAppunti(File):
         with open(self.directory, "w") as file:
             file.write("Scrivi i tuoi appunti qui")
         print("File creato correttamente!")
+        logging.info(f"File creato: {self.directory.name}")
         sleep(0.5)
         self.apri()
-        
-        
-    def elimina(self, lista_appunti, appunti_da_eliminare, directory_considerata):
-        """
-        Elimina un file di appunti selezionato.
-        """
-        global eliminato
-        
-        for i in lista_appunti:
-            
-            if lista_appunti[appunti_da_eliminare] == i:
-                os.remove(directory_considerata / i)
-                print("Appunti eliminati correttamente!")
-                eliminato = True
-                
-        if not eliminato:
-            print("Numero non valido")
-            
-
+           
 # Oggetto globale per la gestione delle credenziali
 file_credenziali = FileCredenziali(Path(__file__).parent / "credenziali.json")
 
@@ -261,12 +254,15 @@ class Account:
     def __init__(self, nome_utente, password):
         self.nome_utente = nome_utente
         self.password = password
-        
+       
         
     def crea_account(self):
         """
         Crea un nuovo account e salva le credenziali.
         """
+
+        logging.info(f"Account creato: {self.nome_utente}")
+
         credenziali = {
             "nome_utente": self.nome_utente,
             "password": self.password
@@ -279,7 +275,8 @@ class Account:
                 json.dump(insieme, file, indent=4)
             except:
                 json.dump(credenziali, file, indent=4)
-                
+               
+            logging.info(f"Credenziali salvate per l'utente: {self.nome_utente}")
                 
     def registrazione(self):
         """
@@ -292,6 +289,7 @@ class Account:
         sleep(0.5)
         self.password = getpass.getpass("Inserisci la password: ").strip()
         self.crea_account()
+        logging.info(f"Account registrato: {self.nome_utente}")
         
         account_verificato = True
         return account_verificato
@@ -305,8 +303,10 @@ class Account:
             credenziali = json.load(file)
             
         if str(input("Inserisci il nome utente ")) == credenziali["nome_utente"] and str(input("Inserisci la password ")) == credenziali["password"]:
+            logging.info("Account verificato con successo")
             return "Account verificato!"
         else:
+            logging.error("Credenziali errate inserite durante la verifica dell'account")
             return "Credenziali errate"
 
 
@@ -353,15 +353,18 @@ def verifica_utente():
                     raise ErroreVerifica()
                 
                 print("Account verificato con successo!")
+                logging.info("Account verificato con successo")
                 account_verificato = True
                 return account_verificato
             
         except ErroreVerifica:
             tentativi += 1
             print("Nome utente o password non validi. Account non verificato")
+            logging.error("Nome utente o password non validi inseriti durante la verifica dell'account")
             
             if tentativi == 3:
                 print("Troppi tentativi falliti. Uscita dal programma.")
+                logging.error("Troppi tentativi falliti per la verifica dell'account")
                 exit()
                 
         except FileNotFoundError:

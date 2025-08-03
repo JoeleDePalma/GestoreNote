@@ -69,11 +69,12 @@ while True:
                 except ValueError:
                     sleep(0.5)
                     print("Inserisci un numero")
+                    logging.error("Errore di input")
                 
-             
-            if cosa_fare not in opzioni:
-                print("Inserisci un opzione valida")
-                continue
+                if cosa_fare not in opzioni:
+                    print("Inserisci un opzione valida")
+                    logging.critical("Opzione non valida inserita")
+                    continue
             
             if cosa_fare == 1:
                 sleep(0.5)
@@ -95,6 +96,9 @@ while True:
                             
                     else:
                         print("Inserisci una risposta valida")
+                        logging.error("Risposta non valida inserita per la privacy degli appunti")
+
+                logging.info(f"Appunti creati: {nome_nuovi_appunti}.txt in {'privati' if privato in ['si', 'sì'] else 'pubblici'}")
                     
                 
             
@@ -105,6 +109,7 @@ while True:
                 
                 if not any([lista_appunti_sep[0], lista_appunti_sep[1]]):
                     print("Non hai appunti da eliminare")
+                    logging.warning("Tentativo di eliminazione appunti ma nessuno presente")
                     continue
             
                 elimina_appunti()
@@ -128,10 +133,12 @@ while True:
                     appunti = FileAppunti(directory_appunti_pubblici / lista_appunti_sep[1][appunti_da_aprire-1])
 
                 appunti.apri()
+                logging.info(f"Lettura/modifica del file andata a buon fine")
             
             elif cosa_fare == 4:
                 sleep(0.5)
                 print("Alla prossima!")
+                logging.info("Uscita dal programma")
                 break
                 
             ripetuto = True
