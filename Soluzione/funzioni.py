@@ -1,15 +1,30 @@
 from pathlib import Path
-import json
 import os
-from time import sleep
-import subprocess
-import getpass
-#aggiungo un commento
-# Directory principali per la gestione degli appunti
+
+# Crea tutte le cartelle necessarie PRIMA di qualsiasi altra operazione
+directory_logs = Path(__file__).parent / "logs"
+directory_logs.mkdir(exist_ok=True)
+
 directory_tutti_gli_appunti = Path(__file__).parent / "appunti"
 directory_appunti_pubblici = directory_tutti_gli_appunti / "pubblici"
 directory_appunti_privati = directory_tutti_gli_appunti / "privati"
 
+directory_tutti_gli_appunti.mkdir(exist_ok=True)
+directory_appunti_pubblici.mkdir(exist_ok=True)
+directory_appunti_privati.mkdir(exist_ok=True)
+
+import json
+from time import sleep
+import subprocess
+import getpass
+import logging
+
+# Configurazione del logging
+logging.basicConfig(
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename=str(directory_logs / "file_logs.log")
+)
 account_verificato = False
 appunti_esistenti = False
 credenziali_esistenti = False

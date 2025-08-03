@@ -1,19 +1,31 @@
 from funzioni import *
 from pathlib import Path
 from time import sleep
+import logging
 
 credenziali_path = Path(__file__).parent / "credenziali.json"
 
 if not credenziali_path.exists():
     credenziali_path.write_text("{}")
+    logging.info("File credenziali.json creato con successo.")
 else:
     # Se il file esiste ma è vuoto, scrivi "{}"
     if credenziali_path.stat().st_size == 0:
         credenziali_path.write_text("{}")
+        from funzioni import *
+        from pathlib import Path
+        from time import sleep
+        import logging
 
-os.makedirs(directory_tutti_gli_appunti, exist_ok=True)
-os.makedirs(directory_appunti_pubblici, exist_ok=True)
-os.makedirs(directory_appunti_privati, exist_ok=True)
+        credenziali_path = Path(__file__).parent / "credenziali.json"
+
+        if not credenziali_path.exists():
+            credenziali_path.write_text("{}")
+            logging.info("File credenziali.json creato con successo.")
+        else:
+            if credenziali_path.stat().st_size == 0:
+                credenziali_path.write_text("{}")
+                logging.info("File credenziali.json esistente ma vuoto, riempito con '{}'.")
 
 opzioni = [1, 2, 3, 4]
 eliminato = False
