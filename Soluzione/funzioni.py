@@ -18,6 +18,15 @@ from time import sleep
 import subprocess
 import getpass
 import logging
+import hashlib
+
+# Funzione per hashare password
+
+def hash_password(password: str) -> str:
+    """
+    Restituisce l'hash SHA-256 della password.
+    """
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Configurazione del logging
 logging.basicConfig(
@@ -43,6 +52,7 @@ def verifica_privati(credenziali_priv):
     
     for i in range(5):
         password_priv = getpass.getpass()
+        password_priv = hash_password(password_priv)  # Hash della password per sicurezza
         
         if password_priv == credenziali_priv:
             sleep(0.5)
@@ -82,6 +92,8 @@ def verifica_esistenza():
             "Password per i file privati non esistente, creane una: "
         ).strip()
         
+        pw_priv = hash_password(pw_priv)  # Hash della password per sicurezza
+
         try:
             with open(file_credenziali.directory, "r") as file:
                 creds = json.load(file)
@@ -304,7 +316,7 @@ class Account:
     """
     def __init__(self, nome_utente, password):
         self.nome_utente = nome_utente
-        self.password = password
+        self.password = hash_password(password)  # Hash della password per sicurezza
        
         
     def crea_account(self):
@@ -340,7 +352,7 @@ class Account:
         self.nome_utente = input("Inserisci il nome utente: ").strip()
         
         sleep(0.5)
-        self.password = getpass.getpass("Inserisci la password: ").strip()
+        self.password = hash_password(getpass.getpass("Inserisci la password: ").strip())
 
         self.crea_account()
         logging.info(f"Account registrato: {self.nome_utente}")
@@ -356,7 +368,7 @@ class Account:
         with open(file_credenziali.directory, "r") as file:
             credenziali = json.load(file)
             
-        if str(input("Inserisci il nome utente ")) == credenziali["nome_utente"] and str(input("Inserisci la password ")) == credenziali["password"]:
+        if str(input("Inserisci il nome utente ")) == credenziali["nome_utente"] and hash_password(str(input("Inserisci la password "))) == credenziali["password"]:
             logging.info("Account verificato con successo")
             return "Account verificato!"
         else:
@@ -411,10 +423,10 @@ def verifica_utente():
                 nome_utente_input = input("Inserisci il nome utente: ").strip()
                 sleep(0.5)
                 
-                password_input = getpass.getpass("Inserisci la password: ").strip()
+                password_input = hash_password(getpass.getpass("Inserisci la password: ").strip())
                 sleep(0.5)
                 
-                if nome_utente_input != str(credenziali["nome_utente"]) or password_input != str(credenziali["password"]):
+                if nome_utente_input != credenziali["nome_utente"] or password_input != credenziali["password"]:
                     raise ErroreVerifica()
                 
                 print("Account verificato con successo!")
