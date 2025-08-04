@@ -38,6 +38,7 @@ def verifica_privati(credenziali_priv):
     Chiede all'utente di inserire la password per accedere agli appunti privati.
     Permette fino a 5 tentativi.
     """
+    sleep(0.5)
     print("Abbiamo notato che hai già una password per i file privati! Procedi ad inserirla per accedervi")
     
     for i in range(5):
@@ -47,15 +48,18 @@ def verifica_privati(credenziali_priv):
             sleep(0.5)
             print("Accesso autorizzato")
             logging.info("Accesso autorizzato agli appunti privati")
+            sleep(0.5)
             return True
         else:
             if i < 4:
+                sleep(0.5)
                 print("Password errata, accesso rifiutato, riprova")
                 logging.warning("Password errata inserita per gli appunti privati")
             else:
                 sleep(0.5)
                 print("Troppi tentativi falliti")
                 logging.error("Troppi tentativi falliti per l'accesso agli appunti privati")
+                sleep(0.5)
                 exit()
 
 
@@ -94,6 +98,7 @@ def verifica_esistenza():
             json.dump(creds, file, indent=4)
             
         print("Nuova password salvata correttamente.")
+        sleep(0.5)
         return pw_priv
 
 
@@ -112,7 +117,7 @@ def appunti_considerati(del_mod):
     for a in lista_appunti_sep:
         conto = 1
         
-        if not a: print(f"Non hai appunti {"appunti privati" if secondo_giro is False else "appunti pubblici"} {del_mod}")
+        if not a: print(f"Non hai appunti {"privati" if secondo_giro is False else "pubblici"} {del_mod}")
         
         else: print("Appunti privati:") if secondo_giro is False else print("Appunti pubblici:")
 
@@ -121,12 +126,13 @@ def appunti_considerati(del_mod):
             conto += 1
             lista_appunti_tot.append(i)
 
-        print()
+        sleep(3)
         secondo_giro = True
 
     # Richiesta input con ciclo finché non valido
     while True:
         try:
+            os.system("cls")
             sleep(0.5)
             priv_publ = int(input(f"""Inserisci il numero dello stato degli appunti {del_mod}:
     1. Privati
@@ -149,18 +155,21 @@ def appunti_considerati(del_mod):
         
         except ValueError:
             sleep(0.5)
+            print()
             print("Inserisci un numero!")
+            print()
             logging.error("Errore di input: non è stato inserito un numero")
 
         except AppuntiNonEsistenti:
             sleep(0.5)
             print(f"Non hai appunti {"privati" if priv_publ == 1 else "pubblici"} {del_mod}")
-            print()
+            sleep(0.5)
             logging.warning(f"Tentativo di considerare appunti {"privati" if priv_publ == 1 else "pubblici"} ma nessuno presente")
     
     conto = 1
     
-    print(f"Inserisci il numero corrispondente agli appunti {del_mod}")
+    os.system("cls")
+    print(f"Inserisci il numero corrispondente agli appunti privati {del_mod}") if priv_publ == 1 else print(f"Inserisci il numero corrispondente agli appunti pubblici {del_mod}")
     for i in lista_appunti_sep[priv_publ-1]:
         print(f"    {conto}. {i[:-4]}")
         conto += 1
@@ -171,10 +180,11 @@ def appunti_considerati(del_mod):
             appunti_da_considerare = int(input())
             
             if 1 <= appunti_da_considerare <= len(lista_appunti_sep[priv_publ-1]): break
-            else: print("Numero non valido, riprova."); logging.error("Numero non valido inserito per la selezione degli appunti")
+            else: sleep(0.5); print("Numero non valido, riprova."); logging.error("Numero non valido inserito per la selezione degli appunti")
                 
         except ValueError:
-            print("Inserisci un numero valido.")
+            sleep(0.5)
+            print("Inserisci un numero.")
             logging.error("Errore di input: non è stato inserito un numero valido")
 
     return appunti_da_considerare, priv_publ
@@ -204,6 +214,7 @@ def elimina_appunti():
         else: print("Non hai appunti pubblici da eliminare"); logging.warning("Tentativo di eliminazione appunti pubblici ma nessuno presente"); return
 
     logging.info(f"Appunti eliminati: {lista_appunti_sep[priv_publ-1][appunti_da_eliminare-1]} in {'privati' if priv_publ == 1 else 'pubblici'}")
+    sleep(0.5)
 
 class File:
     """
@@ -317,17 +328,20 @@ class Account:
                 json.dump(credenziali, file, indent=4)
                
             logging.info(f"Credenziali salvate per l'utente: {self.nome_utente}")
+
                 
     def registrazione(self):
         """
         Procedura di registrazione di un nuovo utente.
         """
-        print("Abbiamo notato che non sei ancora registrato!")
+        sleep(0.5)
+        print("Abbiamo notato che non sei ancora registrato! Procedi a creare un account!")
         sleep(0.5)
         self.nome_utente = input("Inserisci il nome utente: ").strip()
         
         sleep(0.5)
         self.password = getpass.getpass("Inserisci la password: ").strip()
+
         self.crea_account()
         logging.info(f"Account registrato: {self.nome_utente}")
         
@@ -384,6 +398,8 @@ def verifica_utente():
                 account_verificato = True
                 sleep(0.5)
                 print("Registrazione completata con successo!")
+                sleep(0.5)
+                os.system("cls")
                 return account_verificato
             
             else:

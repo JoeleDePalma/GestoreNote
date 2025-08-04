@@ -8,25 +8,13 @@ credenziali_path = Path(__file__).parent / "credenziali.json"
 if not credenziali_path.exists():
     credenziali_path.write_text("{}")
     logging.info("File credenziali.json creato con successo.")
-else:
-    # Se il file esiste ma è vuoto, scrivi "{}"
+
+else:  #  Se il file esiste ma è vuoto, scrivi "{}"
     if credenziali_path.stat().st_size == 0:
         credenziali_path.write_text("{}")
-        from funzioni import *
-        from pathlib import Path
-        from time import sleep
-        import logging
+        logging.info("File credenziali.json esistente ma vuoto, riempito con '{}'.")
 
-        credenziali_path = Path(__file__).parent / "credenziali.json"
-
-        if not credenziali_path.exists():
-            credenziali_path.write_text("{}")
-            logging.info("File credenziali.json creato con successo.")
-        else:
-            if credenziali_path.stat().st_size == 0:
-                credenziali_path.write_text("{}")
-                logging.info("File credenziali.json esistente ma vuoto, riempito con '{}'.")
-
+   
 opzioni = [1, 2, 3, 4]
 eliminato = False
 
@@ -68,6 +56,7 @@ while True:
                     cosa_fare = int(input())
 
                     if cosa_fare not in opzioni:
+                        sleep(0.5)
                         print("Inserisci un opzione valida")
                         logging.critical("Opzione non valida inserita")
                         continue
@@ -86,7 +75,7 @@ while True:
                 nome_nuovi_appunti: str = input("Inserisci il nome dei nuovi appunti: ").strip()
                 
                 while True:
-                    
+                    sleep(0.5)
                     privato = input("Vuoi rendere questi appunti privati? Saranno protetti da una password(Si/No): ").strip().lower()                
                         
                     if privato == "si" or privato == "sì":
@@ -113,7 +102,7 @@ while True:
                 lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
                 lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
 
-                if not lista_appunti_tot: print("Non hai appunti da eliminare"); logging.warning("Tentativo di eliminazione appunti ma nessuno presente"); continue
+                if not lista_appunti_tot: print("Non hai appunti da eliminare"); logging.warning("Tentativo di eliminazione appunti ma nessuno presente"); sleep(0.5); os.system("cls"); continue
 
                 elimina_appunti()
                 
@@ -123,7 +112,7 @@ while True:
                 lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
                 lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
                 
-                if not lista_appunti_tot: print("Non hai appunti da leggere o modificare"); logging.warning("Tentativo di modifica/lettura appunti ma nessuno presente") ; continue
+                if not lista_appunti_tot: print("Non hai appunti da leggere o modificare"); logging.warning("Tentativo di modifica/lettura appunti ma nessuno presente"); sleep(0.5); os.system("cls"); continue
                 
                 appunti_da_aprire, priv_publ = appunti_considerati("da aprire")
                 
