@@ -18,7 +18,18 @@ from time import sleep
 import subprocess
 import getpass
 import logging
-import hashlib
+from argon2 import PasswordHasher
+from concurrent.futures import ThreadPoolExecutor
+
+# creazione oggetto per hashing password
+
+pass_hash = PasswordHasher(
+    time_cost=2,
+    memory_cost=32 * 1024,
+    parallelism=2,
+    hash_len=32,
+    salt_len=16
+)
 
 # Funzione per hashare password
 
@@ -26,7 +37,7 @@ def hash_password(password: str) -> str:
     """
     Restituisce l'hash SHA-256 della password.
     """
-    return hashlib.sha256(password.encode()).hexdigest()
+    return pass_hash.hash(password)
 
 # Configurazione del logging
 logging.basicConfig(
@@ -52,15 +63,17 @@ def verifica_privati(credenziali_priv):
     
     for i in range(5):
         password_priv = getpass.getpass()
-        password_priv = hash_password(password_priv)  # Hash della password per sicurezza
-        
-        if password_priv == credenziali_priv:
+
+        try:
+            pass_hash.verify(credenziali_priv, password_priv)
             sleep(0.5)
             print("Accesso autorizzato")
             logging.info("Accesso autorizzato agli appunti privati")
             sleep(0.5)
             return True
-        else:
+
+        except Exception:
+
             if i < 4:
                 sleep(0.5)
                 print("Password errata, accesso rifiutato, riprova")
@@ -71,6 +84,7 @@ def verifica_privati(credenziali_priv):
                 logging.error("Troppi tentativi falliti per l'accesso agli appunti privati")
                 sleep(0.5)
                 exit()
+
 
 
 def verifica_esistenza():
@@ -125,6 +139,7 @@ def appunti_considerati(del_mod):
     lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
     lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
     secondo_giro = False
+    print()
 
     for a in lista_appunti_sep:
         conto = 1
@@ -138,8 +153,11 @@ def appunti_considerati(del_mod):
             conto += 1
             lista_appunti_tot.append(i)
 
-        sleep(3)
+        sleep(1.5)
+        print()
         secondo_giro = True
+
+    sleep(3)
 
     # Richiesta input con ciclo finché non valido
     while True:
@@ -181,7 +199,7 @@ def appunti_considerati(del_mod):
     conto = 1
     
     os.system("cls")
-    print(f"Inserisci il numero corrispondente agli appunti privati {del_mod}") if priv_publ == 1 else print(f"Inserisci il numero corrispondente agli appunti pubblici {del_mod}")
+    print(f"Inserisci il numero corrispondente agli appunti privati {del_mod}:") if priv_publ == 1 else print(f"Inserisci il numero corrispondente agli appunti pubblici {del_mod}:")
     for i in lista_appunti_sep[priv_publ-1]:
         print(f"    {conto}. {i[:-4]}")
         conto += 1
@@ -316,7 +334,7 @@ class Account:
     """
     def __init__(self, nome_utente, password):
         self.nome_utente = nome_utente
-        self.password = hash_password(password)  # Hash della password per sicurezza
+        self.password = password 
        
         
     def crea_account(self):
@@ -367,13 +385,22 @@ class Account:
         """
         with open(file_credenziali.directory, "r") as file:
             credenziali = json.load(file)
-            
-        if str(input("Inserisci il nome utente ")) == credenziali["nome_utente"] and hash_password(str(input("Inserisci la password "))) == credenziali["password"]:
+
+        nome_utente_input = input("Inserisci il nome utente: ").strip()
+        password_input = getpass.getpass("Inserisci la password: ").strip()
+
+        if nome_utente_input != credenziali["nome_utente"]:
+            logging.error("Nome utente errato inserito durante la verifica dell'account")
+            return "Credenziali errate"
+
+        try:
+            pass_hash.verify(credenziali["password"], password_input)
             logging.info("Account verificato con successo")
             return "Account verificato!"
-        else:
-            logging.error("Credenziali errate inserite durante la verifica dell'account")
+        except Exception:
+            logging.error("Password errata inserita durante la verifica dell'account")
             return "Credenziali errate"
+
 
 
 class ErroreVerifica(Exception):
@@ -395,7 +422,6 @@ def verifica_utente():
     Se non lo è, avvia la registrazione.
     Permette fino a 3 tentativi di login.
     """
-
     global account_verificato
     tentativi = 0
 
@@ -403,7 +429,7 @@ def verifica_utente():
         try:
             with open(file_credenziali.directory, "r") as file:
                 credenziali = json.load(file)
-                
+
             if not "nome_utente" in credenziali or not "password" in credenziali:
                 account = Account("", "")
                 account.registrazione()
@@ -413,39 +439,43 @@ def verifica_utente():
                 sleep(0.5)
                 os.system("cls")
                 return account_verificato
-            
-            else:
-                account = Account(credenziali["nome_utente"], credenziali["password"])
 
-                if tentativi == 0: print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
+            else:
+                if tentativi == 0:
+                    print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
                 sleep(0.5)
-                
+
                 nome_utente_input = input("Inserisci il nome utente: ").strip()
                 sleep(0.5)
-                
-                password_input = hash_password(getpass.getpass("Inserisci la password: ").strip())
+                password_input = getpass.getpass("Inserisci la password: ").strip()
                 sleep(0.5)
-                
-                if nome_utente_input != credenziali["nome_utente"] or password_input != credenziali["password"]:
+
+                if nome_utente_input != credenziali["nome_utente"]:
                     raise ErroreVerifica()
-                
+
+                # Verifica la password usando Argon2
+                try:
+                    pass_hash.verify(credenziali["password"], password_input)
+                except Exception:
+                    raise ErroreVerifica()
+
                 print("Account verificato con successo!")
                 logging.info("Account verificato con successo")
                 sleep(0.5)
                 os.system("cls")
                 account_verificato = True
                 return account_verificato
-            
+
         except ErroreVerifica:
             tentativi += 1
             print("Nome utente o password non validi. Account non verificato")
             logging.error("Nome utente o password non validi inseriti durante la verifica dell'account")
-            
+
             if tentativi == 3:
                 print("Troppi tentativi falliti. Uscita dal programma.")
                 logging.error("Troppi tentativi falliti per la verifica dell'account")
                 exit()
-                
+
         except FileNotFoundError:
             account = Account("", "")
             account.registrazione()
