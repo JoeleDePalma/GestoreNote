@@ -31,11 +31,11 @@ opzioni = [1, 2, 3, 4]
 eliminato = False
 
 print("""
-                    ⚠️ IMPORTANTE ⚠️             
+                                                    ⚠️ IMPORTANTE ⚠️             
             
-        DURANTE L'INSERIMENTO DELLA PASSWORD NON 
-         VERRANNO MOSTRATI I CARATTERI INSERITI 
-          PER QUESTIONI DI SICUREZZA E PRIVACY
+                                        DURANTE L'INSERIMENTO DELLA PASSWORD NON 
+                                         VERRANNO MOSTRATI I CARATTERI INSERITI 
+                                          PER QUESTIONI DI SICUREZZA E PRIVACY
         
         """)
 
@@ -44,15 +44,17 @@ while True:
     account_verificato = verifica_utente()
 
     if account_verificato:
+        ripetuto = False
         while True:
             
             sleep(0.5)
             
             if not ripetuto:            
-                print("""Benvenuto in note pad! Cosa vuoi fare? Inserisci il numero
+                print("""Benvenuto in note pad! Cosa vuoi fare? Inserisci il numero corrispondente all'azione che vuoi eseguire:
     1. Scrivere nuovi appunti 
     2. Eliminare appunti esistenti 
-    3. modificare/leggere appunti esistenti""")
+    3. modificare/leggere appunti esistenti
+    4. Esci""")
                 
             else:
                 print("""Cosa vorresti fare ora?
@@ -64,18 +66,21 @@ while True:
             while True:
                 try:    
                     cosa_fare = int(input())
+
+                    if cosa_fare not in opzioni:
+                        print("Inserisci un opzione valida")
+                        logging.critical("Opzione non valida inserita")
+                        continue
+                    
                     break
-                
+
                 except ValueError:
                     sleep(0.5)
                     print("Inserisci un numero")
                     logging.error("Errore di input")
-                
-                if cosa_fare not in opzioni:
-                    print("Inserisci un opzione valida")
-                    logging.critical("Opzione non valida inserita")
                     continue
             
+
             if cosa_fare == 1:
                 sleep(0.5)
                 nome_nuovi_appunti: str = input("Inserisci il nome dei nuovi appunti: ").strip()
@@ -106,12 +111,10 @@ while True:
                 sleep(0.5)
                 
                 lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
-                
-                if not any([lista_appunti_sep[0], lista_appunti_sep[1]]):
-                    print("Non hai appunti da eliminare")
-                    logging.warning("Tentativo di eliminazione appunti ma nessuno presente")
-                    continue
-            
+                lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
+
+                if not lista_appunti_tot: print("Non hai appunti da eliminare"); logging.warning("Tentativo di eliminazione appunti ma nessuno presente"); continue
+
                 elimina_appunti()
                 
             elif cosa_fare == 3:
@@ -120,9 +123,7 @@ while True:
                 lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
                 lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
                 
-                if not lista_appunti_tot:
-                    print("Non hai appunti da leggere o modificare")
-                    continue
+                if not lista_appunti_tot: print("Non hai appunti da leggere o modificare"); logging.warning("Tentativo di modifica/lettura appunti ma nessuno presente") ; continue
                 
                 appunti_da_aprire, priv_publ = appunti_considerati("da aprire")
                 
@@ -140,6 +141,10 @@ while True:
                 print("Alla prossima!")
                 logging.info("Uscita dal programma")
                 break
+
+            else:
+                if not isinstance(cosa_fare, int): print("Inserisci un numero"); logging.error("Errore di input"); sleep(0.5)
                 
+            os.system("cls")
             ripetuto = True
     break       

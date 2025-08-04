@@ -110,13 +110,18 @@ def appunti_considerati(del_mod):
     secondo_giro = False
 
     for a in lista_appunti_sep:
-        print("Appunti privati:") if secondo_giro is False else print("Appunti pubblici:")
         conto = 1
         
+        if not a: print(f"Non hai appunti {"appunti privati" if secondo_giro is False else "appunti pubblici"} {del_mod}")
+        
+        else: print("Appunti privati:") if secondo_giro is False else print("Appunti pubblici:")
+
         for i in a:
             print(f"    {conto}. {i[:-4]}")
             conto += 1
             lista_appunti_tot.append(i)
+
+        print()
         secondo_giro = True
 
     # Richiesta input con ciclo finché non valido
@@ -131,9 +136,15 @@ def appunti_considerati(del_mod):
                 sleep(0.5)
                 print("Inserisci un numero valido")
                 logging.error("Errore di input: non è stato inserito un numero valido")
+
             else:
                 if priv_publ == 1:
-                    verifica_esistenza()
+                    if not lista_appunti_sep[0]: raise AppuntiNonEsistenti
+                    else: verifica_esistenza()
+
+                elif priv_publ == 2:
+                    if not lista_appunti_sep[1]: raise AppuntiNonEsistenti
+
                 break
         
         except ValueError:
@@ -141,10 +152,15 @@ def appunti_considerati(del_mod):
             print("Inserisci un numero!")
             logging.error("Errore di input: non è stato inserito un numero")
 
-        print(f"Inserisci il numero corrispondente agli appunti {del_mod}:")
+        except AppuntiNonEsistenti:
+            sleep(0.5)
+            print(f"Non hai appunti {"privati" if priv_publ == 1 else "pubblici"} {del_mod}")
+            print()
+            logging.warning(f"Tentativo di considerare appunti {"privati" if priv_publ == 1 else "pubblici"} ma nessuno presente")
     
     conto = 1
     
+    print(f"Inserisci il numero corrispondente agli appunti {del_mod}")
     for i in lista_appunti_sep[priv_publ-1]:
         print(f"    {conto}. {i[:-4]}")
         conto += 1
@@ -173,12 +189,19 @@ def elimina_appunti():
     appunti_da_eliminare, priv_publ = appunti_considerati("da eliminare")
     
     if priv_publ == 1:
-        appunti = FileAppunti(directory_appunti_privati/lista_appunti_sep[0][appunti_da_eliminare-1])
-        appunti.elimina(lista_appunti_sep[0], appunti_da_eliminare-1, directory_appunti_privati)
-    
+
+        if lista_appunti_sep[0]:
+            appunti = FileAppunti(directory_appunti_privati/lista_appunti_sep[0][appunti_da_eliminare-1])
+            appunti.elimina(lista_appunti_sep[0], appunti_da_eliminare-1, directory_appunti_privati)
+        
+        else: print("Non hai appunti privati da eliminare"); logging.warning("Tentativo di eliminazione appunti privati ma nessuno presente"); return
+
     else:
-        appunti = FileAppunti(directory_appunti_pubblici/lista_appunti_sep[1][appunti_da_eliminare-1])
-        appunti.elimina(lista_appunti_sep[1], appunti_da_eliminare-1, directory_appunti_pubblici)
+        if lista_appunti_sep[1]:
+            appunti = FileAppunti(directory_appunti_pubblici/lista_appunti_sep[1][appunti_da_eliminare-1])
+            appunti.elimina(lista_appunti_sep[1], appunti_da_eliminare-1, directory_appunti_pubblici)
+
+        else: print("Non hai appunti pubblici da eliminare"); logging.warning("Tentativo di eliminazione appunti pubblici ma nessuno presente"); return
 
     logging.info(f"Appunti eliminati: {lista_appunti_sep[priv_publ-1][appunti_da_eliminare-1]} in {'privati' if priv_publ == 1 else 'pubblici'}")
 
@@ -242,6 +265,23 @@ class FileAppunti(File):
         logging.info(f"File creato: {self.directory.name}")
         sleep(0.5)
         self.apri()
+
+
+    def elimina(self, lista_appunti, appunti_da_eliminare, directory_considerata):
+        """
+        Elimina un file di appunti selezionato.
+        """
+        global eliminato
+        
+        for i in lista_appunti:
+            
+            if lista_appunti[appunti_da_eliminare] == i:
+                os.remove(directory_considerata / i)
+                print("Appunti eliminati correttamente!")
+                eliminato = True
+                
+        if not eliminato:
+            print("Numero non valido")
            
 # Oggetto globale per la gestione delle credenziali
 file_credenziali = FileCredenziali(Path(__file__).parent / "credenziali.json")
@@ -316,6 +356,12 @@ class ErroreVerifica(Exception):
     """
     pass
 
+class AppuntiNonEsistenti(Exception):
+    """
+    Eccezione personalizzata per quando non esistono appunti.
+    """
+    pass
+
 
 def verifica_utente():
     """
@@ -323,8 +369,10 @@ def verifica_utente():
     Se non lo è, avvia la registrazione.
     Permette fino a 3 tentativi di login.
     """
+
     global account_verificato
     tentativi = 0
+
     while tentativi < 3:
         try:
             with open(file_credenziali.directory, "r") as file:
@@ -340,7 +388,8 @@ def verifica_utente():
             
             else:
                 account = Account(credenziali["nome_utente"], credenziali["password"])
-                print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
+
+                if tentativi == 0: print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
                 sleep(0.5)
                 
                 nome_utente_input = input("Inserisci il nome utente: ").strip()
@@ -354,6 +403,8 @@ def verifica_utente():
                 
                 print("Account verificato con successo!")
                 logging.info("Account verificato con successo")
+                sleep(0.5)
+                os.system("cls")
                 account_verificato = True
                 return account_verificato
             
