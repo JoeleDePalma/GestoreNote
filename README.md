@@ -18,6 +18,7 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 ## 🛠️ Requisiti
 
 - Python 3.9+
+- OS Windows
 - Moduli richiesti:
   - `argon2-cffi`
   - `getpass`
