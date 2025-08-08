@@ -29,7 +29,7 @@ print("""
 
 while True:
     
-    account_verificato = verifica_utente()
+    account_verificato, public_cryptography = verifica_utente()
 
     if account_verificato:
         ripetuto = False
@@ -80,12 +80,13 @@ while True:
                         
                     if privato == "si" or privato == "sì":
                         appunti = FileAppunti(directory_appunti_privati / f"{nome_nuovi_appunti}.txt")
-                        appunti.crea()
+                        private_cryptography = verifica_esistenza()
+                        appunti.crea(private_cryptography)
                         break
                         
                     elif privato == "no":
                         appunti = FileAppunti(directory_appunti_pubblici / f"{nome_nuovi_appunti}.txt")
-                        appunti.crea()
+                        appunti.crea(public_cryptography)
                         break
                             
                     else:
@@ -95,7 +96,6 @@ while True:
                 logging.info(f"Appunti creati: {nome_nuovi_appunti}.txt in {'privati' if privato in ['si', 'sì'] else 'pubblici'}")
                     
                 
-            
             elif cosa_fare == 2:
                 sleep(0.5)
                 
@@ -114,15 +114,15 @@ while True:
                 
                 if not lista_appunti_tot: print("Non hai appunti da leggere o modificare"); logging.warning("Tentativo di modifica/lettura appunti ma nessuno presente"); sleep(0.5); os.system("cls"); continue
                 
-                appunti_da_aprire, priv_publ = appunti_considerati("da aprire")
+                appunti_da_aprire, priv_publ, private_cryptography = appunti_considerati("da aprire")
                 
                 if priv_publ == 1:
                     appunti = FileAppunti(directory_appunti_privati / lista_appunti_sep[0][appunti_da_aprire-1])
-                    
+                    appunti.apri(private_cryptography)
                 else:
                     appunti = FileAppunti(directory_appunti_pubblici / lista_appunti_sep[1][appunti_da_aprire-1])
+                    appunti.apri(public_cryptography)
 
-                appunti.apri()
                 logging.info(f"Lettura/modifica del file andata a buon fine")
             
             elif cosa_fare == 4:

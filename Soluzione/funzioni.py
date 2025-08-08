@@ -19,7 +19,10 @@ import subprocess
 import getpass
 import logging
 from argon2 import PasswordHasher
-from concurrent.futures import ThreadPoolExecutor
+from argon2.low_level import Type, hash_secret_raw
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import hmac
+import secrets
 
 # creazione oggetto per hashing password
 
@@ -35,7 +38,7 @@ pass_hash = PasswordHasher(
 
 def hash_password(password: str) -> str:
     """
-    Restituisce l'hash SHA-256 della password.
+    Restituisce l'hash Argon2ID della password.
     """
     return pass_hash.hash(password)
 
@@ -63,14 +66,17 @@ def verifica_privati(credenziali_priv):
     
     for i in range(5):
         password_priv = getpass.getpass()
-
+        temp_pass = password_priv  # Salva la password temporaneamente per la crittografia
         try:
             pass_hash.verify(credenziali_priv, password_priv)
             sleep(0.5)
             print("Accesso autorizzato")
             logging.info("Accesso autorizzato agli appunti privati")
+            private_cryptography = cryptography(temp_pass)
+            logging.info("Oggetto di crittografia per gli appunti privati creato correttamente")
+            temp_pass = None  # Rimuove la password in chiaro per sicurezza
             sleep(0.5)
-            return True
+            return private_cryptography
 
         except Exception:
 
@@ -97,15 +103,16 @@ def verifica_esistenza():
             creds = json.load(file)
             pw_priv = creds["password_priv"]
             
-        verifica_privati(pw_priv)
-        return pw_priv
+        private_cryptography = verifica_privati(pw_priv)
+        return private_cryptography
     
     except (FileNotFoundError, KeyError, json.JSONDecodeError):
         # Richiede una nuova password se non esiste
         pw_priv = getpass.getpass(
             "Password per i file privati non esistente, creane una: "
         ).strip()
-        
+        logging.info("Password per gli appunti privati creata correttamente")
+        temp_pass = pw_priv  # Salva la password temporaneamente per la crittografia
         pw_priv = hash_password(pw_priv)  # Hash della password per sicurezza
 
         try:
@@ -122,10 +129,16 @@ def verifica_esistenza():
         
         with open(file_credenziali.directory, "w") as file:
             json.dump(creds, file, indent=4)
-            
+
+        logging.info("Password per gli appunti privati salvata correttamente")
         print("Nuova password salvata correttamente.")
+
+        # Crea un oggetto di crittografia per gli appunti privati
+        private_cryptography = cryptography(temp_pass)
+        logging.info("Oggetto di crittografia per gli appunti privati creato correttamente")
+        temp_pass = None  # Rimuove la password in chiaro per sicurezza
         sleep(0.5)
-        return pw_priv
+        return private_cryptography
 
 
 def appunti_considerati(del_mod):
@@ -159,6 +172,7 @@ def appunti_considerati(del_mod):
 
     sleep(3)
 
+    private_cryptography = None  # Inizializza la variabile per la crittografia privata
     # Richiesta input con ciclo finché non valido
     while True:
         try:
@@ -176,13 +190,13 @@ def appunti_considerati(del_mod):
             else:
                 if priv_publ == 1:
                     if not lista_appunti_sep[0]: raise AppuntiNonEsistenti
-                    else: verifica_esistenza()
+                    else: private_cryptography = verifica_esistenza()
 
                 elif priv_publ == 2:
                     if not lista_appunti_sep[1]: raise AppuntiNonEsistenti
-
+                
                 break
-        
+
         except ValueError:
             sleep(0.5)
             print()
@@ -200,9 +214,7 @@ def appunti_considerati(del_mod):
     
     os.system("cls")
     print(f"Inserisci il numero corrispondente agli appunti privati {del_mod}:") if priv_publ == 1 else print(f"Inserisci il numero corrispondente agli appunti pubblici {del_mod}:")
-    for i in lista_appunti_sep[priv_publ-1]:
-        print(f"    {conto}. {i[:-4]}")
-        conto += 1
+    for i in lista_appunti_sep[priv_publ-1]: print(f"    {conto}. {i[:-4]}"); conto += 1
 
     appunti_da_considerare = None
     while True:
@@ -217,8 +229,9 @@ def appunti_considerati(del_mod):
             print("Inserisci un numero.")
             logging.error("Errore di input: non è stato inserito un numero valido")
 
-    return appunti_da_considerare, priv_publ
+    if del_mod != "da eliminare": return appunti_da_considerare, priv_publ, private_cryptography
 
+    return appunti_da_considerare, priv_publ
 
 def elimina_appunti():
     """
@@ -246,92 +259,96 @@ def elimina_appunti():
     logging.info(f"Appunti eliminati: {lista_appunti_sep[priv_publ-1][appunti_da_eliminare-1]} in {'privati' if priv_publ == 1 else 'pubblici'}")
     sleep(0.5)
 
-class File:
+
+class cryptography():
     """
-    Classe base per la gestione dei file.
+    Classe per crittografia e decrittografia dei file.
     """
-    def __init__(self, directory):
-        self.directory = directory
+
+    def __init__(self, password: str):
+        self.password = password
+
+        with open(file_credenziali.directory, "r") as file:
+            credenziali = json.load(file)
+        
+        def control_salt(salt_name):
+            """
+            Controlla se il salt esiste o meno, 
+            se non esiste lo crea, altrimenti lo prende dalle informazioni 
+            """
+
+            if salt_name not in credenziali:
+                salt = secrets.token_bytes(16) # Genera un salt casuale lungo 16 bytes
+                with open(file_credenziali.directory, "w") as file:
+                    credenziali[salt_name] = salt.hex()
+                    json.dump(credenziali, file, indent=4) 
+
+            else:
+                salt = bytes.fromhex(credenziali["salt"])
+
+            return salt
+
+        if password == credenziali["password"]: self.salt = control_salt("pub_salt")
+        else: self.salt = control_salt("priv_salt")
+
+        self.key = self.derive_key(password, self.salt)
+        self.aesgcm = AESGCM(self.key) # Crea un oggetto AESGCM con la chiave derivata
+        self.password = None  # Rimuove la password in chiaro per sicurezza
+   
+
+    def derive_key(self, password: str, salt: bytes) -> bytes:
+        """
+        Deriva una chiave AES-GCM da una password e un salt.
+        """
+        return hash_secret_raw(
+            password.encode(),
+            salt = salt,
+            time_cost=3,
+            memory_cost=64 * 1024,
+            parallelism=2,
+            hash_len=32,
+            type=Type.ID
+        )
 
 
-class FileCredenziali(File):
-    """
-    Gestisce il file delle credenziali.
-    """
-    def __init__(self, directory):
+    def encrypt(self, directory: bytes) -> bytes:
+        """
+        Cifra i dati utilizzando AES-GCM.
+        Restituisce i dati cifrati e il nonce.
+        """
+        with open(directory, "rb") as file:
+            data = file.read()
         
-        global credenziali_esistenti
-        super().__init__(directory)
-        
-        if self.directory == Path(__file__).parent / "credenziali.json":
-            try:
-                with open(self.directory, "r") as file:
-                    self.dati = json.load(file)
-                credenziali_esistenti = True
-            except (FileNotFoundError, json.JSONDecodeError): self.dati = None
-                
+        nonce = secrets.token_bytes(12)
+        ciphertext = self.aesgcm.encrypt(nonce, data, None)
 
-class FileAppunti(File):
-    """
-    Gestisce i file degli appunti (privati/pubblici).
-    """
-    def __init__(self, directory):
-        super().__init__(directory)
-        
-        
-    def apri(self):
-        """
-        Apre il file degli appunti con Notepad e segnala eventuali modifiche.
-        """
-        processo = subprocess.Popen(["notepad.exe", self.directory])
-        ultima_modifica = os.path.getmtime(self.directory)
-        
-        while processo.poll() is None:
-            sleep(0.5)
-            nuova_modifica = os.path.getmtime(self.directory)
-            
-            if nuova_modifica != ultima_modifica:
-                print("Il file è stato modificato")
-                ultima_modifica = nuova_modifica
-                logging.info(f"File {self.directory} modificato")
-                
-                
-    def crea(self):
-        """
-        Crea un nuovo file di appunti e lo apre.
-        """
-        with open(self.directory, "w") as file:
-            file.write("Scrivi i tuoi appunti qui")
-        print("File creato correttamente!")
-        logging.info(f"File creato: {self.directory.name}")
-        sleep(0.5)
-        self.apri()
+        with open(directory, "wb") as file:
+            file.write(nonce + ciphertext)
 
 
-    def elimina(self, lista_appunti, appunti_da_eliminare, directory_considerata):
+
+    def decrypt(self, directory: bytes) -> str:
         """
-        Elimina un file di appunti selezionato.
+        Decifra i dati cifrati utilizzando AES-GCM.
         """
-        global eliminato
-        
-        for i in lista_appunti:
-            
-            if lista_appunti[appunti_da_eliminare] == i:
-                os.remove(directory_considerata / i)
-                print("Appunti eliminati correttamente!")
-                eliminato = True
-                
-        if not eliminato:
-            print("Numero non valido")
-           
-# Oggetto globale per la gestione delle credenziali
-file_credenziali = FileCredenziali(Path(__file__).parent / "credenziali.json")
+        with open(directory, "rb") as file:
+            encrypted_data = file.read()  # ottieni bytes
+
+        nonce = encrypted_data[:12]
+        cipher_text = encrypted_data[12:]
+
+        with open(directory, "w") as file:
+            decrypted_data = self.aesgcm.decrypt(nonce, cipher_text, None)
+            decoded_data = decrypted_data.decode('utf-8', errors='ignore')  # Decodifica in stringa
+            file.write(decoded_data)
+
 
 
 class Account:
     """
     Gestisce la registrazione e la verifica dell'account utente.
     """
+
     def __init__(self, nome_utente, password):
         self.nome_utente = nome_utente
         self.password = password 
@@ -370,13 +387,16 @@ class Account:
         self.nome_utente = input("Inserisci il nome utente: ").strip()
         
         sleep(0.5)
-        self.password = hash_password(getpass.getpass("Inserisci la password: ").strip())
+        self.password = getpass.getpass("Inserisci la password: ").strip()
+        password_temp = self.password # Salva la password temporaneamente per la crittografia
+        self.password = hash_password(self.password)
 
         self.crea_account()
         logging.info(f"Account registrato: {self.nome_utente}")
-        
+        public_criptography = cryptography(password_temp)
+        password_temp = None  # Rimuove la password in chiaro per sicurezza
         account_verificato = True
-        return account_verificato
+        return account_verificato, public_criptography
     
     
     def verifica_account(self):
@@ -432,22 +452,21 @@ def verifica_utente():
 
             if not "nome_utente" in credenziali or not "password" in credenziali:
                 account = Account("", "")
-                account.registrazione()
-                account_verificato = True
+                account_verificato, public_cryptography = account.registrazione()
                 sleep(0.5)
                 print("Registrazione completata con successo!")
                 sleep(0.5)
                 os.system("cls")
-                return account_verificato
+                return account_verificato, public_cryptography
 
             else:
-                if tentativi == 0:
-                    print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
+                if tentativi == 0: print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
                 sleep(0.5)
 
                 nome_utente_input = input("Inserisci il nome utente: ").strip()
                 sleep(0.5)
                 password_input = getpass.getpass("Inserisci la password: ").strip()
+                public_cryptography = cryptography(password_input)
                 sleep(0.5)
 
                 if nome_utente_input != credenziali["nome_utente"]:
@@ -457,6 +476,7 @@ def verifica_utente():
                 try:
                     pass_hash.verify(credenziali["password"], password_input)
                 except Exception:
+                    public_cryptography = None
                     raise ErroreVerifica()
 
                 print("Account verificato con successo!")
@@ -464,7 +484,7 @@ def verifica_utente():
                 sleep(0.5)
                 os.system("cls")
                 account_verificato = True
-                return account_verificato
+                return account_verificato, public_cryptography
 
         except ErroreVerifica:
             tentativi += 1
@@ -480,4 +500,105 @@ def verifica_utente():
             account = Account("", "")
             account.registrazione()
             account_verificato = True
-            return account_verificato
+            return account_verificato, public_cryptography
+
+
+class File:
+    """
+    Classe base per la gestione dei file.
+    """
+    def __init__(self, directory):
+        self.directory = directory
+
+
+class FileCredenziali(File):
+    """
+    Gestisce il file delle credenziali.
+    """
+    def __init__(self, directory):
+        
+        global credenziali_esistenti
+        super().__init__(directory)
+        
+        if self.directory == Path(__file__).parent / "credenziali.json":
+            try:
+                with open(self.directory, "r") as file:
+                    self.dati = json.load(file)
+                credenziali_esistenti = True
+            except (FileNotFoundError, json.JSONDecodeError): self.dati = None
+                
+
+class FileAppunti(File):
+
+    """
+    Gestisce i file degli appunti (privati/pubblici).
+    """
+    def __init__(self, directory):
+        super().__init__(directory)
+
+       
+    def apri(self, type_cryptography):
+        """
+        Apre il file degli appunti con Notepad e segnala eventuali modifiche.
+        """
+
+        type_cryptography.decrypt(self.directory)
+
+        processo = subprocess.Popen(["notepad.exe", self.directory])
+        ultima_modifica = os.path.getmtime(self.directory)
+        
+        while processo.poll() is None:
+            sleep(0.5)
+            nuova_modifica = os.path.getmtime(self.directory)
+            
+            if nuova_modifica != ultima_modifica:
+                print("Il file è stato modificato")
+                ultima_modifica = nuova_modifica
+                logging.info(f"File {self.directory} modificato")
+
+        type_cryptography.encrypt(self.directory)
+                
+                
+    def crea(self, type_cryptography):
+        """
+        Crea un nuovo file di appunti e lo apre.
+        """
+        with open(self.directory, "w") as file:
+            file.write("Scrivi i tuoi appunti qui")
+        print("File creato correttamente!")
+        logging.info(f"File creato: {self.directory.name}")
+        sleep(0.5)
+
+        type_cryptography.encrypt(self.directory)
+
+        self.apri(type_cryptography)
+
+
+    def elimina(self, lista_appunti, appunti_da_eliminare, directory_considerata):
+        """
+        Elimina un file di appunti selezionato.
+        """
+        global eliminato
+        
+        for i in lista_appunti:
+            
+            if lista_appunti[appunti_da_eliminare] == i:
+                os.remove(directory_considerata / i)
+                print("Appunti eliminati correttamente!")
+                eliminato = True
+                
+        if not eliminato:
+            print("Numero non valido")
+           
+# Oggetto globale per la gestione delle credenziali
+file_credenziali = FileCredenziali(Path(__file__).parent / "credenziali.json")
+
+
+
+
+
+
+
+
+    
+    
