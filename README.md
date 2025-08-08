@@ -62,7 +62,6 @@ Sono aperto a collaborazioni, miglioramenti e proposte creative!
 - Aggiunta di un'interfaccia grafica per una gestione più intuitiva.
 - Integrazione con servizi cloud per backup automatici.
 - Aggiunta di un database mysql per una gestione più robusta degli appunti e degli utenti.
-- Crittografia per i file degli appunti privati.
 - Recupero password tramite email o numero di telefono.
 
 ## disclaimer: non sono un programmatore esperto, ma sto cercando di migliorare le mie competenze.
