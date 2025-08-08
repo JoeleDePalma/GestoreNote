@@ -21,6 +21,7 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 - Python 3.9+
 - OS Windows
 - Moduli richiesti:
+  - `cryptography`
   - `argon2-cffi`
   - `getpass`
   - `subprocess`
@@ -31,7 +32,7 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 Installa le dipendenze con:
     `bash`
 
-pip install argon2-cffi
+pip install argon2-cffi cryptography
 
 --
 
