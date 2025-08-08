@@ -8,6 +8,7 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 ## 🚀 Funzionalità
 
 - 🔐 **Protezione con password**: accesso agli appunti privati solo dopo verifica.
+- 🔐 **Password hashate e file crittografati** Nessuno potrà accedere alle vostre informazioni private, neanche dal vostro computer.
 - 📁 **Gestione file**: crea, elimina e modifica appunti direttamente dal terminale.
 - 🧠 **Struttura modulare**: classi dedicate per file, credenziali e account.
 - 📝 **Logging automatico**: tutte le operazioni vengono registrate.
@@ -51,11 +52,11 @@ Ogni piccolo gesto è apprezzato e aiuta a mantenere il progetto attivo e aggior
 
 ## 📬 Collaborazioni e contatti
 
-Hai idee, suggerimenti o vuoi collaborare allo sviluppo?
+Hai idee o suggerimenti?
 
 📧 Scrivimi: **joeledepalma135@email.com**
 
-Sono aperto a collaborazioni, miglioramenti e proposte creative!
+Sono aperto a critiche costruttive, miglioramenti e proposte creative!
 
 ## Probabili aggiornamenti futuri:
 
@@ -63,5 +64,7 @@ Sono aperto a collaborazioni, miglioramenti e proposte creative!
 - Integrazione con servizi cloud per backup automatici.
 - Aggiunta di un database mysql per una gestione più robusta degli appunti e degli utenti.
 - Recupero password tramite email o numero di telefono.
+- Modifica di variabili ecc. del codice da italiano ad inglese
+- Miglioramento della struttura modulare del progetto, con ogni file decato ad una classe/compito 
 
 ## disclaimer: non sono un programmatore esperto, ma sto cercando di migliorare le mie competenze.
