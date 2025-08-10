@@ -361,6 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/Soluzione/credenziali.json
+/Soluzione/credentials.json
 /Soluzione/logs
-/Soluzione/appunti
+/Soluzione/notes

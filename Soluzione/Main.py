@@ -1,4 +1,4 @@
-from funzioni import *
+from functions import *
 from pathlib import Path
 from time import sleep
 import logging

@@ -248,15 +248,23 @@ class Cryptography():
             """
             if salt_name not in credentials:
                 salt = secrets.token_bytes(16)
-                with open(file_credentials.directory, "w") as file:
-                    credentials[salt_name] = salt.hex()
-                    json.dump(credentials, file, indent=4)
+                # Carica tutto il file credentials.json
+                try:
+                    with open(file_credentials.directory, "r") as f:
+                        all_creds = json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    all_creds = {}
+                all_creds[salt_name] = salt.hex()
+                with open(file_credentials.directory, "w") as f:
+                    json.dump(all_creds, f, indent=4)
+                credentials[salt_name] = salt.hex()  # aggiorna anche il dict in memoria
             else:
-                salt = bytes.fromhex(credentials["salt"])
+                salt = bytes.fromhex(credentials[salt_name])
             return salt
-        if password == credentials["password"]:
+        try:
+            pass_hash.verify(credentials["password"], password)
             self.salt = control_salt("pub_salt")
-        else:
+        except Exception:
             self.salt = control_salt("priv_salt")
         self.key = self.derive_key(password, self.salt)
         self.aesgcm = AESGCM(self.key)
