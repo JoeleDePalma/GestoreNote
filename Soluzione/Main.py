@@ -3,20 +3,20 @@ from pathlib import Path
 from time import sleep
 import logging
 
-credenziali_path = Path(__file__).parent / "credenziali.json"
+# Path to credentials file
+credentials_path = Path(__file__).parent / "credentials.json"
 
-if not credenziali_path.exists():
-    credenziali_path.write_text("{}")
-    logging.info("File credenziali.json creato con successo.")
+# Create credentials.json if it does not exist or is empty
+if not credentials_path.exists():
+    credentials_path.write_text("{}")
+    logging.info("File credentials.json created successfully.")
+else:
+    if credentials_path.stat().st_size == 0:
+        credentials_path.write_text("{}")
+        logging.info("File credentials.json existed but was empty, filled with '{}'.")
 
-else:  #  Se il file esiste ma è vuoto, scrivi "{}"
-    if credenziali_path.stat().st_size == 0:
-        credenziali_path.write_text("{}")
-        logging.info("File credenziali.json esistente ma vuoto, riempito con '{}'.")
-
-   
-opzioni = [1, 2, 3, 4]
-eliminato = False
+options = [1, 2, 3, 4]
+deleted = False
 
 print("""
                                                     ⚠️ IMPORTANTE ⚠️             
@@ -28,112 +28,101 @@ print("""
         """)
 
 while True:
-    
-    account_verificato, public_cryptography = verifica_utente()
+    verified_account, public_cryptography = verify_user()
 
-    if account_verificato:
-        ripetuto = False
+    if verified_account:
+        repeated = False
         while True:
-            
             sleep(0.5)
-            
-            if not ripetuto:            
+            if not repeated:
                 print("""Benvenuto in note pad! Cosa vuoi fare? Inserisci il numero corrispondente all'azione che vuoi eseguire:
-    1. Scrivere nuovi appunti 
-    2. Eliminare appunti esistenti 
-    3. modificare/leggere appunti esistenti
-    4. Esci""")
-                
-            else:
-                print("""Cosa vorresti fare ora?
-    1. Scrivere nuovi appunti 
-    2. Eliminare appunti esistenti 
+    1. Scrivere nuovi appunti
+    2. Eliminare appunti esistenti
     3. Modificare/leggere appunti esistenti
     4. Esci""")
-                
+            else:
+                print("""Cosa vorresti fare ora?
+    1. Scrivere nuovi appunti
+    2. Eliminare appunti esistenti
+    3. Modificare/leggere appunti esistenti
+    4. Esci""")
             while True:
-                try:    
-                    cosa_fare = int(input())
-
-                    if cosa_fare not in opzioni:
+                try:
+                    what_to_do = int(input())
+                    if what_to_do not in options:
                         sleep(0.5)
-                        print("Inserisci un opzione valida")
-                        logging.critical("Opzione non valida inserita")
+                        print("Inserisci un'opzione valida")
+                        logging.critical("Invalid option entered")
                         continue
-                    
                     break
-
                 except ValueError:
                     sleep(0.5)
                     print("Inserisci un numero")
-                    logging.error("Errore di input")
+                    logging.error("Input error")
                     continue
-            
 
-            if cosa_fare == 1:
+            if what_to_do == 1:
                 sleep(0.5)
-                nome_nuovi_appunti: str = input("Inserisci il nome dei nuovi appunti: ").strip()
-                
+                new_notes_name: str = input("Inserisci il nome dei nuovi appunti: ").strip()
                 while True:
                     sleep(0.5)
-                    privato = input("Vuoi rendere questi appunti privati? Saranno protetti da una password(Si/No): ").strip().lower()                
-                        
-                    if privato == "si" or privato == "sì":
-                        appunti = FileAppunti(directory_appunti_privati / f"{nome_nuovi_appunti}.txt")
-                        private_cryptography = verifica_esistenza()
-                        appunti.crea(private_cryptography)
+                    private = input("Vuoi rendere questi appunti privati? Saranno protetti da una password (Si/No): ").strip().lower()
+                    if private == "si" or private == "sì":
+                        notes = FileNotes(directory_private_notes / f"{new_notes_name}.txt")
+                        private_cryptography = exists_verify()
+                        notes.create(private_cryptography)
                         break
-                        
-                    elif privato == "no":
-                        appunti = FileAppunti(directory_appunti_pubblici / f"{nome_nuovi_appunti}.txt")
-                        appunti.crea(public_cryptography)
+                    elif private == "no":
+                        notes = FileNotes(directory_public_notes / f"{new_notes_name}.txt")
+                        notes.create(public_cryptography)
                         break
-                            
                     else:
                         print("Inserisci una risposta valida")
-                        logging.error("Risposta non valida inserita per la privacy degli appunti")
+                        logging.error("Invalid answer entered for note privacy")
+                logging.info(f"Note created: {new_notes_name}.txt in {'private' if private in ['si', 'sì'] else 'public'}")
 
-                logging.info(f"Appunti creati: {nome_nuovi_appunti}.txt in {'privati' if privato in ['si', 'sì'] else 'pubblici'}")
-                    
-                
-            elif cosa_fare == 2:
+            elif what_to_do == 2:
                 sleep(0.5)
-                
-                lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
-                lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
+                sep_notes_list = [os.listdir(directory_private_notes), os.listdir(directory_public_notes)]
+                notes_list_tot = sep_notes_list[0] + sep_notes_list[1]
+                if not notes_list_tot:
+                    print("Non hai appunti da eliminare")
+                    logging.warning("Attempted to delete notes but none exist")
+                    sleep(0.5)
+                    os.system("cls")
+                    continue
+                delete_notes()
 
-                if not lista_appunti_tot: print("Non hai appunti da eliminare"); logging.warning("Tentativo di eliminazione appunti ma nessuno presente"); sleep(0.5); os.system("cls"); continue
-
-                elimina_appunti()
-                
-            elif cosa_fare == 3:
+            elif what_to_do == 3:
                 sleep(0.5)
-                
-                lista_appunti_sep = [os.listdir(directory_appunti_privati), os.listdir(directory_appunti_pubblici)]
-                lista_appunti_tot = lista_appunti_sep[0] + lista_appunti_sep[1]
-                
-                if not lista_appunti_tot: print("Non hai appunti da leggere o modificare"); logging.warning("Tentativo di modifica/lettura appunti ma nessuno presente"); sleep(0.5); os.system("cls"); continue
-                
-                appunti_da_aprire, priv_publ, private_cryptography = appunti_considerati("da aprire")
-                
+                sep_notes_list = [os.listdir(directory_private_notes), os.listdir(directory_public_notes)]
+                notes_list_tot = sep_notes_list[0] + sep_notes_list[1]
+                if not notes_list_tot:
+                    print("Non hai appunti da leggere o modificare")
+                    logging.warning("Attempted to read/modify notes but none exist")
+                    sleep(0.5)
+                    os.system("cls")
+                    continue
+                notes_to_open, priv_publ, private_cryptography = notes_considered("da aprire")
                 if priv_publ == 1:
-                    appunti = FileAppunti(directory_appunti_privati / lista_appunti_sep[0][appunti_da_aprire-1])
-                    appunti.apri(private_cryptography)
+                    notes = FileNotes(directory_private_notes / sep_notes_list[0][notes_to_open-1])
+                    notes.open(private_cryptography)
                 else:
-                    appunti = FileAppunti(directory_appunti_pubblici / lista_appunti_sep[1][appunti_da_aprire-1])
-                    appunti.apri(public_cryptography)
+                    notes = FileNotes(directory_public_notes / sep_notes_list[1][notes_to_open-1])
+                    notes.open(public_cryptography)
+                logging.info("File read/modified successfully")
 
-                logging.info(f"Lettura/modifica del file andata a buon fine")
-            
-            elif cosa_fare == 4:
+            elif what_to_do == 4:
                 sleep(0.5)
                 print("Alla prossima!")
-                logging.info("Uscita dal programma")
+                logging.info("Program exited")
                 break
 
             else:
-                if not isinstance(cosa_fare, int): print("Inserisci un numero"); logging.error("Errore di input"); sleep(0.5)
-                
+                if not isinstance(what_to_do, int):
+                    print("Inserisci un numero")
+                    logging.error("Input error")
+                    sleep(0.5)
             os.system("cls")
-            ripetuto = True
-    break       
+            repeated = True
+    break
