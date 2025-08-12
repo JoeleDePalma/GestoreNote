@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 from pathlib import Path
 import os
 
@@ -325,25 +328,18 @@ class Account:
             "username": self.username,
             "password": self.password
         }
-        with open(file_credentials.directory, "w") as file:
-            try:
-                already_existing = json.load(file)
-                together = already_existing + credentials
-                json.dump(together, file, indent=4)
-            except:
-                json.dump(credentials, file, indent=4)
-            logging.info(f"Credentials saved for user: {self.username}")
 
-    def sign_up(self):
+        with open(file_credentials.directory, "w") as file:
+            json.dump(credentials, file, indent=4)
+
+        logging.info(f"Credentials saved for user: {self.username}")
+        
+        
+
+    def sign_in(self):
         """
         User registration procedure.
         """
-        sleep(0.5)
-        print("Abbiamo notato che non sei ancora registrato! Procedi a creare un account!")
-        sleep(0.5)
-        self.username = input("Inserisci il nome utente: ").strip()
-        sleep(0.5)
-        self.password = getpass.getpass("Inserisci la password: ").strip()
         password_temp = self.password
         self.password = hash_password(self.password)
         self.create_account()
@@ -353,24 +349,22 @@ class Account:
         verified_account = True
         return verified_account, public_cryptography
 
-    def verify_account(self):
+    def verify_user(self):
         """
         Verifies user credentials.
         """
         with open(file_credentials.directory, "r") as file:
             credentials = json.load(file)
-        username_input = input("Inserisci il nome utente: ").strip()
-        password_input = getpass.getpass("Inserisci la password: ").strip()
-        if username_input != credentials["username"]:
-            logging.error("Wrong username entered during account verification")
-            return "Credenziali errate"
+        
         try:
-            pass_hash.verify(credentials["password"], password_input)
-            logging.info("Account successfully verified")
-            return "Account verificato!"
-        except Exception:
-            logging.error("Wrong password entered during account verification")
-            return "Credenziali errate"
+            if credentials["username"] != self.username:
+                return False
+            pass_hash.verify(credentials["password"], self.password)
+            return True
+
+        except (KeyError, ValueError):
+            logging.error("Verification failed: Invalid username or password")
+            return False
 
 class VerifyError(Exception):
     """
@@ -382,62 +376,7 @@ class NotExistingNotes(Exception):
     """
     Custom exception for when notes do not exist.
     """
-    pass
-
-def verify_user():
-    """
-    Checks if the user is registered and authenticated.
-    If not, starts the registration.
-    Allows up to 3 login attempts.
-    """
-    global verified_account
-    attempts = 0
-    while attempts < 3:
-        try:
-            with open(file_credentials.directory, "r") as file:
-                credentials = json.load(file)
-            if not "username" in credentials or not "password" in credentials:
-                account = Account("", "")
-                verified_account, public_cryptography = account.sign_up()
-                sleep(0.5)
-                print("Registrazione completata con successo!")
-                sleep(0.5)
-                os.system("cls")
-                return verified_account, public_cryptography
-            else:
-                if attempts == 0: print("Abbiamo notato che sei già registrato! Procedi a verificare la tua identità!")
-                sleep(0.5)
-                username_input = input("Inserisci il nome utente: ").strip()
-                sleep(0.5)
-                password_input = getpass.getpass("Inserisci la password: ").strip()
-                public_cryptography = Cryptography(password_input)
-                sleep(0.5)
-                if username_input != credentials["username"]:
-                    raise VerifyError()
-                try:
-                    pass_hash.verify(credentials["password"], password_input)
-                except Exception:
-                    public_cryptography = None
-                    raise VerifyError()
-                print("Account verificato con successo!")
-                logging.info("Account successfully verified")
-                sleep(0.5)
-                os.system("cls")
-                verified_account = True
-                return verified_account, public_cryptography
-        except VerifyError:
-            attempts += 1
-            print("Nome utente o password non validi. Account non verificato")
-            logging.error("Wrong username or password entered during account verification")
-            if attempts == 3:
-                print("Troppi tentativi falliti. Uscita dal programma.")
-                logging.error("Too many failed attempts for account verification")
-                exit()
-        except FileNotFoundError:
-            account = Account("", "")
-            account.sign_up()
-            verified_account = True
-            return verified_account, public_cryptography
+    pass    
 
 class File:
     """
