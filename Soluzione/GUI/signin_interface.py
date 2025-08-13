@@ -1,9 +1,14 @@
 ﻿# -*- coding: utf-8 -*-
 
-from PySide6.QtWidgets import QApplication, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
-from PySide6.QtCore import QLine, Qt
-from functions import *
+from email.mime import image
+from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
+from PySide6.QtCore import QLine, Qt, QSize
+from PySide6.QtGui import QIcon
+from Soluzione.functions import *
+from pathlib import Path
 import re
+
+images_path = Path(__file__).parent / "Images"
 
 class login_window(QWidget):
 
@@ -14,6 +19,7 @@ class login_window(QWidget):
 
         self.valid_username = False
         self.valid_password = False
+        self.hidden_password = True
 
         # Window initialization
         self.setWindowTitle("Registrati")
@@ -29,6 +35,8 @@ class login_window(QWidget):
         
         self.password_input_box = QLineEdit()
 
+        self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
+
         self.password_warning = QLabel("La password deve contenere almeno 8 caratteri maiuscoli e minuscoli")
 
         self.characters_warning = QLabel("La password deve contere almeno un carattere speciale")
@@ -39,7 +47,6 @@ class login_window(QWidget):
 
         self.login_link = QPushButton("Accedi")
 
-        
         
         # Commons styles
         self.username_password_css = """
@@ -99,7 +106,8 @@ class login_window(QWidget):
         self.password_input_box.setFixedSize(350, 40)
         self.password_input_box.setStyleSheet(self.username_password_css)
         self.password_input_box.textChanged.connect(lambda text: self.changed_text_input(text, "password"))
-
+        self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
+        
         self.login_link.setFlat(True)
         self.login_link.setFixedSize(60, 20)
         self.login_link.setCursor(Qt.PointingHandCursor)
@@ -177,6 +185,17 @@ class login_window(QWidget):
         self.characters_warning.setStyleSheet(self.warning_text_css)
         self.characters_warning.setVisible(False)
 
+        self.password_hide_button.setFixedSize(50, 30)
+        self.password_hide_button.setIconSize(QSize(40, 40))
+        self.password_hide_button.setStyleSheet("""
+        
+                                                    background-color: transparent;
+                                                    border: none;
+
+                                                """)
+        self.password_hide_button.setCursor(Qt.PointingHandCursor)
+        self.password_hide_button.clicked.connect(self.hide_password_func)
+
 
         # Layout Initialization
         layout = QVBoxLayout()
@@ -186,23 +205,38 @@ class login_window(QWidget):
         button_layout.addWidget(self.login_link)
         button_layout.setAlignment(Qt.AlignCenter)
 
+        # Hide password button functionality
+        password_layout = QHBoxLayout()
+        password_layout.addWidget(self.password_input_box)
+        password_layout.addWidget(self.password_hide_button)
+        
         # layout configuration
         layout.addWidget(self.welcome_text)
         layout.addWidget(self.signin_text)
         layout.addWidget(self.username_input_box)
         layout.addWidget(self.username_warning)
-        layout.addWidget(self.password_input_box)
+        layout.addLayout(password_layout)
         layout.addWidget(self.password_warning)
         layout.addWidget(self.characters_warning)
         layout.addWidget(self.signin_button)
         layout.setAlignment(Qt.AlignCenter)
         layout.addLayout(button_layout) 
         
-        layout.setContentsMargins(0, 0, 0, 100)
+        layout.setContentsMargins(75, 0, 75, 100)
         self.setLayout(layout)
 
 
     # Connect the buttons to the functions
+
+    def hide_password_func(self):
+        """
+        Function to hide or show the password in the password input box when the user clicks on the eye button.
+        """
+        self.hidden_password = not self.hidden_password  # Toggle the hidden password state
+
+        if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
+        else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
+
     def signin_clicked_func(self):
         """
         Function to call after the user clicks on the signin button.
