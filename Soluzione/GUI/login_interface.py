@@ -1,12 +1,10 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-import importlib.util
 from pathlib import Path
+import importlib.util
 
-# Module's path to load
 functions_path = Path(__file__).parent.parent / "functions.py"
 
-# Loads dynamic module from the specified path
 spec = importlib.util.spec_from_file_location("functions", str(functions_path))
 functions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(functions)
@@ -15,12 +13,10 @@ spec.loader.exec_module(functions)
 from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
 from PySide6.QtCore import QLine, Qt, QSize
 from PySide6.QtGui import QIcon
-import re
-
 
 images_path = Path(__file__).parent / "Images"
 
-class signin_window(QWidget):
+class login_window(QWidget):
 
     def __init__(self):
         super().__init__()
@@ -37,25 +33,23 @@ class signin_window(QWidget):
 
 
         # Input camps and texts initialization
-        self.welcome_text = QLabel("Benvenuto!")
+        self.welcomeback_text = QLabel("Bentornato!")
 
         self.username_input_box = QLineEdit()
-
-        self.username_warning = QLabel("Il nome utente deve essere lungo almeno 5 caratteri")
         
         self.password_input_box = QLineEdit()
 
         self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
 
-        self.password_warning = QLabel("La password deve contenere almeno 8 caratteri maiuscoli e minuscoli")
+        self.login_button = QPushButton("Accedi")
 
-        self.characters_warning = QLabel("La password deve contere almeno un carattere speciale")
+        self.login_text = QLabel("Accedi al tuo account")
 
-        self.signin_button = QPushButton("Registrati")
+        self.warning_text = QLabel("Nome utente o password non validi")
 
-        self.signin_text = QLabel("Crea il tuo account")
+        self.warning_attempts = QLabel("Troppi tentativi falliti, riprova pi\u00f9 tardi")
 
-        self.login_link = QPushButton("Sei già registrato? Accedi")
+        self.signin_link = QPushButton("Registrati")
 
         
         # Commons styles
@@ -92,14 +86,14 @@ class signin_window(QWidget):
         self.warning_text_css = """
                                 
                                     font-family: Arial;
-                                    font-size: 10px;
+                                    font-size: 15px;
                                     color: red;
                                 
                                 """
 
         # Input camps and text modellation
-        self.welcome_text.setAlignment(Qt.AlignCenter)
-        self.welcome_text.setStyleSheet("""
+        self.welcomeback_text.setAlignment(Qt.AlignCenter)
+        self.welcomeback_text.setStyleSheet("""
             
             font-family: Montserrat;
             font-size: 30px;
@@ -110,19 +104,19 @@ class signin_window(QWidget):
         self.username_input_box.setPlaceholderText("Nome utente")
         self.username_input_box.setFixedSize(350, 40)
         self.username_input_box.setStyleSheet(self.username_password_css)
-        self.username_input_box.textChanged.connect(lambda text: self.changed_text_input(text, "username"))
-
+        self.username_input_box.textChanged.connect(self.changed_text_input)
+        
         self.password_input_box.setPlaceholderText("Password")
         self.password_input_box.setFixedSize(350, 40)
         self.password_input_box.setStyleSheet(self.username_password_css)
-        self.password_input_box.textChanged.connect(lambda text: self.changed_text_input(text, "password"))
         self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
+        self.password_input_box.textChanged.connect(self.changed_text_input)
         
-        self.login_link.setFlat(True)
-        self.login_link.setFixedSize(160, 20)
-        self.login_link.setCursor(Qt.PointingHandCursor)
-        self.login_link.clicked.connect(self.login_window_show)
-        self.login_link.setStyleSheet("""
+        self.signin_link.setFlat(True)
+        self.signin_link.setFixedSize(80, 20)
+        self.signin_link.setCursor(Qt.PointingHandCursor)
+        self.signin_link.clicked.connect(self.signin_window_show)
+        self.signin_link.setStyleSheet("""
             
             QPushButton 
             {
@@ -138,19 +132,19 @@ class signin_window(QWidget):
             QPushButton:hover 
             {
                 color: #0056b3;  
-                background: transparent !important; 
+                background: transparent !important;  
             }
 
             QPushButton:pressed 
             {
-                color: #004085;
-                background: transparent !important; 
+                color: #004085;  
+                background: transparent !important;  
             }
 
         """)
 
-        self.signin_text.setAlignment(Qt.AlignCenter)
-        self.signin_text.setStyleSheet("""
+        self.login_text.setAlignment(Qt.AlignCenter)
+        self.login_text.setStyleSheet("""
             
             font-family: Arial;
             font-size: 15px;
@@ -159,17 +153,17 @@ class signin_window(QWidget):
         
         """)
 
-        self.signin_button.setFixedSize(350, 45)
-        self.signin_button.setCursor(Qt.PointingHandCursor)
-        self.signin_button.setEnabled(False)
-        self.signin_button.setStyleSheet("""
+        self.login_button.setFixedSize(350, 45)
+        self.login_button.setCursor(Qt.PointingHandCursor)
+        self.login_button.setEnabled(False)
+        self.login_button.setStyleSheet("""
         
             QPushButton 
             {
                 background-color: #007BFF;  
-                color: white; 
-                border: none; 
-                border-radius: 20px;
+                color: white;  
+                border: none;  
+                border-radius: 20px; 
                 font-family: Arial;
                 font-size: 16px;
             }
@@ -185,16 +179,8 @@ class signin_window(QWidget):
             }
 
         """)
-        self.signin_button.clicked.connect(self.signin_clicked_func)
-
-        self.username_warning.setStyleSheet(self.warning_text_css)
-        self.username_warning.setVisible(False)
-
-        self.password_warning.setStyleSheet(self.warning_text_css)
-        self.password_warning.setVisible(False)
-
-        self.characters_warning.setStyleSheet(self.warning_text_css)
-        self.characters_warning.setVisible(False)
+        self.attempts = 0
+        self.login_button.clicked.connect(self.login_clicked_func)
 
         self.password_hide_button.setFixedSize(50, 30)
         self.password_hide_button.setIconSize(QSize(40, 40))
@@ -207,13 +193,21 @@ class signin_window(QWidget):
         self.password_hide_button.setCursor(Qt.PointingHandCursor)
         self.password_hide_button.clicked.connect(self.hide_password_func)
 
+        self.warning_text.setVisible(False)
+        self.warning_text.setAlignment(Qt.AlignCenter)
+        self.warning_text.setStyleSheet(self.warning_text_css)
+        
+        self.warning_attempts.setVisible(False)
+        self.warning_attempts.setAlignment(Qt.AlignCenter)
+        self.warning_attempts.setStyleSheet(self.warning_text_css)
+
 
         # Layout Initialization
         layout = QVBoxLayout()
 
         # Button's layout
         button_layout = QHBoxLayout()
-        button_layout.addWidget(self.login_link)
+        button_layout.addWidget(self.signin_link)
         button_layout.setAlignment(Qt.AlignCenter)
 
         # Hide password button functionality
@@ -222,14 +216,13 @@ class signin_window(QWidget):
         password_layout.addWidget(self.password_hide_button)
         
         # layout configuration
-        layout.addWidget(self.welcome_text)
-        layout.addWidget(self.signin_text)
+        layout.addWidget(self.welcomeback_text)
+        layout.addWidget(self.login_text)
         layout.addWidget(self.username_input_box)
-        layout.addWidget(self.username_warning)
         layout.addLayout(password_layout)
-        layout.addWidget(self.password_warning)
-        layout.addWidget(self.characters_warning)
-        layout.addWidget(self.signin_button)
+        layout.addWidget(self.warning_text)
+        layout.addWidget(self.warning_attempts)
+        layout.addWidget(self.login_button)
         layout.setAlignment(Qt.AlignCenter)
         layout.addLayout(button_layout) 
         
@@ -239,14 +232,15 @@ class signin_window(QWidget):
 
     # Connect the buttons to the functions
 
-    def login_window_show(self):
+    def signin_window_show(self):
         """
-        Function to show the login window when the user clicks on the login link.
+        Function to show the signin window when the user clicks on the signin link.
         """
-        from GUI.login_interface import login_window
-        self.login_win = login_window()
-        self.login_win.show()
+        from GUI.signin_interface import signin_window
+        signin_win = signin_window()
+        signin_win.show()
         self.close()
+
 
     def hide_password_func(self):
         """
@@ -257,7 +251,8 @@ class signin_window(QWidget):
         if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
         else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
 
-    def signin_clicked_func(self):
+
+    def login_clicked_func(self):
         """
         Function to call after the user clicks on the signin button.
         """
@@ -266,85 +261,45 @@ class signin_window(QWidget):
         self.username_input = self.username_input_box.text()
         self.password_input = self.password_input_box.text()
         account = functions.Account(username=self.username_input, password=self.password_input)
-        self.verified_account, self.public_cryptography = account.sign_in()
+        self.attempts += 1
+
+        if self.attempts < 3:
+            self.verified_account = account.verify_user()
+            if self.verified_account is True: None
+            else: self.warning_text.setVisible(True)
+
+        else:
+            self.warning_text.setVisible(False)
+            self.warning_attempts.setVisible(True)
+            self.login_button.setEnabled(False)
+
 
         # If the account is verified, we can proceed to the main window
         self.password_input_box.clear()
         self.username_input_box.clear()
-        
 
-    def changed_text_input(self, text, type_changed):
+
+    def changed_text_input(self):
         """
-        Checks the state of the password input every time the user types or deletes something in the box.
-        
-        Return a different style depending on the state of the password input box. 
+        Function that checks if the username and password input boxes are filled
         """
         
-        if type_changed == "password":
+        input_username = self.username_input_box.text()
+        input_password = self.password_input_box.text()
 
-            self.password_input = text
-
+        if self.attempts < 3:
+            if all([input_username, input_password]): self.login_button.setEnabled(True) 
+            else: self.login_button.setEnabled(False)
         
-            def contains_special_characters(text):
-                # Return True if there is a special character in the string, else None
-                special_characters_pattern = r"[^\w\s]" # Ignores any character that is not of type \w(alphabetic characters and underscores) and \s(whitespaces)
-                return bool(re.search(special_characters_pattern, text)) # searches in the string, and converts the return into a boolean
 
 
-            if not text:
-                self.password_input_box.setStyleSheet(self.username_password_css)
-                self.signin_button.setEnabled(False)
-                self.valid_password = False
-                self.password_warning.setVisible(False)
-                self.characters_warning.setVisible(False)
 
-            elif len(text)<8:
-                self.password_input_box.setStyleSheet(self.warning_style_css)
-                self.signin_button.setEnabled(False)
-                self.valid_password = False
-                self.password_warning.setVisible(True)
-                self.characters_warning.setVisible(False)
 
-            elif text.isupper() or text.islower():
-                self.password_input_box.setStyleSheet(self.warning_style_css)
-                self.signin_button.setEnabled(False)
-                self.valid_password = False
-                self.password_warning.setVisible(True)
-                self.characters_warning.setVisible(False)
 
-            elif not contains_special_characters(text):
-                self.password_input_box.setStyleSheet(self.warning_style_css)
-                self.signin_button.setEnabled(False)
-                self.valid_password = False
-                self.password_warning.setVisible(False)
-                self.characters_warning.setVisible(True)
 
-            else:
-                self.password_input_box.setStyleSheet(self.cansign_style_css)
-                self.valid_password = True
-                self.password_warning.setVisible(False)
-                self.characters_warning.setVisible(False)
 
-        elif type_changed == "username":
-            
-            self.username_input = text
 
-            if not text:
-                self.username_input_box.setStyleSheet(self.username_password_css)
-                self.signin_button.setEnabled(False)
-                self.valid_username = False
-                self.username_warning.setVisible(False)
-        
-            elif len(text)<5:
-                self.username_input_box.setStyleSheet(self.warning_style_css)
-                self.signin_button.setEnabled(False)
-                self.valid_username = False
-                self.username_warning.setVisible(True)
 
-            else:
-                self.username_input_box.setStyleSheet(self.cansign_style_css)
-                self.valid_username = True
-                self.username_warning.setVisible(False)
 
-        if self.valid_password and self.valid_username:
-            self.signin_button.setEnabled(True)
+
+

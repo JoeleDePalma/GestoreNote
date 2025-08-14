@@ -45,7 +45,7 @@ def hash_password(password: str) -> str:
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    filename=str(directory_logs / "file_logs.log"),
+    filename=str(directory_logs / "file_logs.txt"),
     filemode="a"
 )
 
@@ -334,8 +334,7 @@ class Account:
 
         logging.info(f"Credentials saved for user: {self.username}")
         
-        
-
+    
     def sign_in(self):
         """
         User registration procedure.
