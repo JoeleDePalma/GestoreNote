@@ -32,9 +32,13 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 Installa le dipendenze con:
     `bash`
 
-pip install argon2-cffi cryptography
+pip install argon2-cffi cryptography PySide6
 
---
+oppure
+
+pip install -r requirements.txt
+
+---
 
 ## ▶️ Avvio
 
@@ -61,11 +65,9 @@ Sono aperto a critiche costruttive, miglioramenti e proposte creative!
 
 ## Probabili aggiornamenti futuri:
 
-- Aggiunta di un'interfaccia grafica per una gestione più intuitiva.
 - Integrazione con servizi cloud per backup automatici.
 - Aggiunta di un database mysql per una gestione più robusta degli appunti e degli utenti.
 - Recupero password tramite email o numero di telefono.
-- Modifica di variabili ecc. del codice da italiano ad inglese
 - Miglioramento della struttura modulare del progetto, con ogni file decato ad una classe/compito 
 
 ## disclaimer: non sono un programmatore esperto, ma sto cercando di migliorare le mie competenze.
