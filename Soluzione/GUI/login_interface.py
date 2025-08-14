@@ -28,7 +28,7 @@ class login_window(QWidget):
         self.hidden_password = True
 
         # Window initialization
-        self.setWindowTitle("Registrati")
+        self.setWindowTitle("Accedi")
         self.setFixedSize(500, 650)
 
 

@@ -19,8 +19,8 @@ directory_private_notes.mkdir(exist_ok=True)
 import json
 from time import sleep
 import subprocess
-import getpass
 import logging
+import getpass
 from argon2 import PasswordHasher
 from argon2.low_level import Type, hash_secret_raw
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
