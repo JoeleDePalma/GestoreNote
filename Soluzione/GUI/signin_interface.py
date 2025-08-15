@@ -272,6 +272,8 @@ class signin_window(QWidget):
         self.password_input_box.clear()
         self.username_input_box.clear()
         
+        self.close()
+
 
     def changed_text_input(self, text, type_changed):
         """

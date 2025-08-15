@@ -26,6 +26,7 @@ class login_window(QWidget):
         self.valid_username = False
         self.valid_password = False
         self.hidden_password = True
+        self.user_verified = False
 
         # Window initialization
         self.setWindowTitle("Accedi")
@@ -239,6 +240,7 @@ class login_window(QWidget):
         from GUI.signin_interface import signin_window
         signin_win = signin_window()
         signin_win.show()
+        self.user_verified = True
         self.close()
 
 
@@ -263,20 +265,23 @@ class login_window(QWidget):
         account = functions.Account(username=self.username_input, password=self.password_input)
         self.attempts += 1
 
+        self.password_input_box.clear()
+        self.username_input_box.clear()
+
         if self.attempts < 3:
             self.verified_account = account.verify_user()
-            if self.verified_account is True: None
+            if self.verified_account is True:
+                from GUI.menu_interface import menu_window
+                menu_win = menu_window()
+                menu_win.show()
+                self.close()
+
             else: self.warning_text.setVisible(True)
 
         else:
             self.warning_text.setVisible(False)
             self.warning_attempts.setVisible(True)
             self.login_button.setEnabled(False)
-
-
-        # If the account is verified, we can proceed to the main window
-        self.password_input_box.clear()
-        self.username_input_box.clear()
 
 
     def changed_text_input(self):
