@@ -16,15 +16,29 @@ directory_all_notes.mkdir(exist_ok=True)
 directory_public_notes.mkdir(exist_ok=True)
 directory_private_notes.mkdir(exist_ok=True)
 
-import json
-from time import sleep
+import sqlite3
 import subprocess
 import logging
 import getpass
-from argon2 import PasswordHasher
+from argon2 import PasswordHasher, exceptions
 from argon2.low_level import Type, hash_secret_raw
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import secrets
+
+conn = sqlite3.connect(Path(__file__).parent / "credentials.db")
+cursor = conn.cursor()
+
+cursor.execute("""
+    
+                CREATE TABLE IF NOT EXISTS users(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL UNIQUE,
+                    publ_pass TEXT NOT NULL,
+                    pub_salt BLOB,
+                    priv_pass TEXT,
+                    priv_salt BLOB)
+                    
+                """)
 
 # Create password hasher object
 pass_hash = PasswordHasher(
@@ -51,74 +65,44 @@ logging.basicConfig(
 
 verified_account = False
 notes_exists = False
-credentials_exists = False
 repeated = True
 
-def verify_privates(credentials_priv):
+def verify_privates(credentials_priv, attempts):
     """
     Asks the user to enter the password to access private notes.
     Allows up to 5 attempts.
     """
-    sleep(0.5)
-    print("Abbiamo notato che hai già una password per i file privati! Procedi ad inserirla per accedervi")
+
     
-    for i in range(5):
-        password_priv = getpass.getpass("Inserisci la password per gli appunti privati: ")
-        temp_pass = password_priv  # Temporarily stores the password for encryption
-        try:
-            pass_hash.verify(credentials_priv, password_priv)
-            sleep(0.5)
-            print("Accesso autorizzato")
-            logging.info("Private notes access granted")
-            private_cryptography = Cryptography(temp_pass)
-            logging.info("Cryptography object for private notes created successfully")
-            temp_pass = None  # Removes the plain password for security
-            sleep(0.5)
-            return private_cryptography
+    temp_pass = password_priv  # Temporarily stores the password for encryption
+    try:
+        pass_hash.verify(credentials_priv, password_priv)
+        logging.info("Private notes access granted")
+        private_cryptography = Cryptography(temp_pass)
+        logging.info("Cryptography object for private notes created successfully")
+        temp_pass = None  # Removes the plain password for security
+        return private_cryptography
 
-        except Exception:
-            if i < 4:
-                sleep(0.5)
-                print("Password errata, accesso rifiutato, riprova")
-                logging.warning("Wrong password entered for private notes")
-            else:
-                sleep(0.5)
-                print("Troppi tentativi falliti")
-                logging.error("Too many failed attempts for private notes access")
-                sleep(0.5)
-                exit()
+    except Exception:
+        if attempts < 4:
+            logging.warning("Wrong password entered for private notes")
+        else:
+            logging.error("Too many failed attempts for private notes access")
+            exit()
 
-def exists_verify():
+def exists_verify(username):
     """
     Checks if a password exists for private notes.
     If not, asks for and saves a new one.
     """
-    try:
-        with open(file_credentials.directory, "r") as file:
-            creds = json.load(file)
-            priv_pw = creds["password_priv"]
-        private_cryptography = verify_privates(priv_pw)
-        return private_cryptography
-    except (FileNotFoundError, KeyError, json.JSONDecodeError):
-        priv_pw = getpass.getpass(
-            "Password per i file privati non esistente, creane una: "
-        ).strip()
-        logging.info("Private notes password created successfully")
-        temp_pass = priv_pw
-        priv_pw = hash_password(priv_pw)
-        try:
-            with open(file_credentials.directory, "r") as file:
-                creds = json.load(file)
-            if not isinstance(creds, dict):
-                creds = {}
-        except (FileNotFoundError, json.JSONDecodeError):
-            creds = {}
-        creds["password_priv"] = priv_pw
-        with open(file_credentials.directory, "w") as file:
-            json.dump(creds, file, indent=4)
+    
+    cursor.execute("SELECT priv_pass FROM users WHERE username = ?", (username,))
+    priv_pass = cursor.fetchone()[0]
 
+        
+    else:
+        verify_privates(priv_pass)
         logging.info("Private notes password saved successfully")
-        print("Nuova password salvata correttamente.")
 
         private_cryptography = Cryptography(temp_pass)
         logging.info("Cryptography object for private notes created successfully")
@@ -237,41 +221,54 @@ def delete_notes():
     logging.info(f"Note deleted: {sep_notes_list[priv_publ-1][notes_to_delete-1]} in {'private' if priv_publ == 1 else 'public'}")
     sleep(0.5)
 
+
 class Cryptography():
     """
     Class for file encryption and decryption.
     """
-    def __init__(self, password: str):
-        self.password = password
-        with open(file_credentials.directory, "r") as file:
-            credentials = json.load(file)
+    def __init__(self, password: str, username):
+        self.temp_pass = password
+        self.username = username
+        
         def control_salt(salt_name):
             """
             Checks if the salt exists, creates it if not, otherwise retrieves it.
             """
-            if salt_name not in credentials:
+            
+            cursor.execute("SELECT publ_salt, priv_salt FROM users WHERE username = ?", (self.username,))
+            
+            salts = cursor.fetchone()
+            publ_salt, priv_salt = salts
+
+            if salt_name == "publ_salt" and publ_salt is None:
                 salt = secrets.token_bytes(16)
-                # Carica tutto il file credentials.json
-                try:
-                    with open(file_credentials.directory, "r") as f:
-                        all_creds = json.load(f)
-                except (FileNotFoundError, json.JSONDecodeError):
-                    all_creds = {}
-                all_creds[salt_name] = salt.hex()
-                with open(file_credentials.directory, "w") as f:
-                    json.dump(all_creds, f, indent=4)
-                credentials[salt_name] = salt.hex()  # aggiorna anche il dict in memoria
-            else:
-                salt = bytes.fromhex(credentials[salt_name])
+                cursor.execute("UPDATE users SET publ_salt = ? WHERE username = ?",(salt, self.username,))
+                conn.commit()
+
+            elif salt_name == "publ_salt" and publ_salt: return publ_salt
+
+            elif salt_name == "priv_salt" and priv_salt is None:
+                salt = secrets.token_bytes(16)
+                cursor.execute("UPDATE users SET priv_salt = ? WHERE username = ?",(salt, self.username,))
+                conn.commit()
+
+            elif salt_name == "priv_salt" and priv_salt: return priv_salt
+
             return salt
+        
+        cursor.execute("SELECT publ_pass FROM users WHERE username = ?", self.username,)
+        password = cursor.fetchone()[0]
+
         try:
-            pass_hash.verify(credentials["password"], password)
-            self.salt = control_salt("pub_salt")
+            pass_hash.verify(password, self.temp_pass)
+            self.salt = control_salt("publ_salt")
+
         except Exception:
             self.salt = control_salt("priv_salt")
+
         self.key = self.derive_key(password, self.salt)
         self.aesgcm = AESGCM(self.key)
-        self.password = None  # Removes the plain password for security
+        self.temp_pass = None  # Removes the plain password for security
 
     def derive_key(self, password: str, salt: bytes) -> bytes:
         """
@@ -329,8 +326,14 @@ class Account:
             "password": self.password
         }
 
-        with open(file_credentials.directory, "w") as file:
-            json.dump(credentials, file, indent=4)
+        cursor.execute("""
+        
+                        INSERT INTO users(username, publ_pass) VALUES (?, ?)""", 
+                        (credentials["username"], credentials["password"])
+                        
+                        )
+
+        conn.commit()
 
         logging.info(f"Credentials saved for user: {self.username}")
         
@@ -343,7 +346,7 @@ class Account:
         self.password = hash_password(self.password)
         self.create_account()
         logging.info(f"Account registered: {self.username}")
-        public_cryptography = Cryptography(password_temp)
+        public_cryptography = Cryptography(password_temp, self.username)
         password_temp = None
         verified_account = True
         return verified_account, public_cryptography
@@ -352,18 +355,31 @@ class Account:
         """
         Verifies user credentials.
         """
-        with open(file_credentials.directory, "r") as file:
-            credentials = json.load(file)
         
+        
+        cursor.execute("SELECT username, publ_pass FROM users WHERE username = ?"), (self.username,)
+        credentials = cursor.fetchone()
+        credentials = {
+                        "username": credentials[0],
+                        "password": credentials[1]
+                        }
+
         try:
-            if credentials["username"] != self.username:
-                return False
+            if not credentials["username"]:
+                raise VerifyError("Username non trovato")
+
+        except VerifyError:
+            logging.error("Username not found during verification")
+            return False
+
+        try:
             pass_hash.verify(credentials["password"], self.password)
             return True
-
-        except (KeyError, ValueError):
-            logging.error("Verification failed: Invalid username or password")
+        
+        except exceptions.VerifyMismatchError:
+            logging.error("Password doesn't match, verification failed")
             return False
+        
 
 class VerifyError(Exception):
     """
@@ -384,20 +400,6 @@ class File:
     def __init__(self, directory):
         self.directory = directory
 
-class FileCredentials(File):
-    """
-    Manages the credentials file.
-    """
-    def __init__(self, directory):
-        global credentials_exists
-        super().__init__(directory)
-        if self.directory == Path(__file__).parent / "credentials.json":
-            try:
-                with open(self.directory, "r") as file:
-                    self.data = json.load(file)
-                credentials_exists = True
-            except (FileNotFoundError, json.JSONDecodeError):
-                self.data = None
 
 class FileNotes(File):
     """
@@ -446,7 +448,4 @@ class FileNotes(File):
                 deleted = True
         if not deleted:
             print("Numero non valido")
-
-# Global object for credentials management
-file_credentials = FileCredentials(Path(__file__).parent / "credentials.json")
 

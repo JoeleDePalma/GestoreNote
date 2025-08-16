@@ -3,11 +3,11 @@
 from pathlib import Path
 import importlib.util
 
-functions_path = Path(__file__).parent.parent / "functions.py"
+# functions_path = Path(__file__).parent.parent / "functions.py"
 
-spec = importlib.util.spec_from_file_location("functions", str(functions_path))
-functions = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(functions)
+# spec = importlib.util.spec_from_file_location("functions", str(functions_path))
+# functions = importlib.util.module_from_spec(spec)
+# spec.loader.exec_module(functions)
 
 
 from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
@@ -16,7 +16,7 @@ from PySide6.QtGui import QIcon
 
 images_path = Path(__file__).parent / "Images"
 
-class login_window(QWidget):
+class verify_identity__window(QWidget):
 
     def __init__(self):
         super().__init__()
@@ -29,12 +29,11 @@ class login_window(QWidget):
         self.user_verified = False
 
         # Window initialization
-        self.setWindowTitle("Accedi")
+        self.setWindowTitle("Verifica account")
         self.setFixedSize(500, 650)
 
 
         # Input camps and texts initialization
-        self.welcomeback_text = QLabel("Bentornato!")
 
         self.username_input_box = QLineEdit()
         
@@ -42,15 +41,14 @@ class login_window(QWidget):
 
         self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
 
-        self.login_button = QPushButton("Accedi")
+        self.login_button = QPushButton("Verifica")
 
-        self.login_text = QLabel("Accedi al tuo account")
+        self.login_text = QLabel("Verifica il tuo account")
 
         self.warning_text = QLabel("Nome utente o password non validi")
 
         self.warning_attempts = QLabel("Troppi tentativi falliti, riprova pi\u00f9 tardi")
 
-        self.signin_link = QPushButton("Registrati")
 
         
         # Commons styles
@@ -93,19 +91,6 @@ class login_window(QWidget):
                                 """
 
         # Input camps and text modellation
-        self.welcomeback_text.setAlignment(Qt.AlignCenter)
-        self.welcomeback_text.setStyleSheet("""
-            
-            font-family: Montserrat;
-            font-size: 30px;
-            font-weight: bold;
-        
-        """)
-        
-        self.username_input_box.setPlaceholderText("Nome utente")
-        self.username_input_box.setFixedSize(350, 40)
-        self.username_input_box.setStyleSheet(self.username_password_css)
-        self.username_input_box.textChanged.connect(self.changed_text_input)
         
         self.password_input_box.setPlaceholderText("Password")
         self.password_input_box.setFixedSize(350, 40)
@@ -113,43 +98,14 @@ class login_window(QWidget):
         self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
         self.password_input_box.textChanged.connect(self.changed_text_input)
         
-        self.signin_link.setFlat(True)
-        self.signin_link.setFixedSize(80, 20)
-        self.signin_link.setCursor(Qt.PointingHandCursor)
-        self.signin_link.clicked.connect(self.signin_window_show)
-        self.signin_link.setStyleSheet("""
-            
-            QPushButton 
-            {
-                font-family: Poppins semibold;
-                font-size: 15px;
-                background: transparent !important;  /* Forces transparent background */
-                text-decoration: underline;
-                color: #007BFF; 
-                border: none !important;  /* Forces to remove any border */
-                padding: 0 !important;  /* Removes padding */
-            }
-
-            QPushButton:hover 
-            {
-                color: #0056b3;  
-                background: transparent !important;  
-            }
-
-            QPushButton:pressed 
-            {
-                color: #004085;  
-                background: transparent !important;  
-            }
-
-        """)
-
         self.login_text.setAlignment(Qt.AlignCenter)
         self.login_text.setStyleSheet("""
             
-            font-family: Arial;
-            font-size: 15px;
-            color: grey;
+            font-family: 'Merriweather', serif;
+            font-weight: 500;
+            font-style: italic;
+            font-size: 25px;
+            color: black;
             margin-bottom: 50px;
         
         """)
@@ -181,7 +137,7 @@ class login_window(QWidget):
 
         """)
         self.attempts = 0
-        self.login_button.clicked.connect(self.login_clicked_func)
+        self.login_button.clicked.connect(self.verify_clicked_func)
 
         self.password_hide_button.setFixedSize(50, 30)
         self.password_hide_button.setIconSize(QSize(40, 40))
@@ -208,7 +164,6 @@ class login_window(QWidget):
 
         # Button's layout
         button_layout = QHBoxLayout()
-        button_layout.addWidget(self.signin_link)
         button_layout.setAlignment(Qt.AlignCenter)
 
         # Hide password button functionality
@@ -217,9 +172,7 @@ class login_window(QWidget):
         password_layout.addWidget(self.password_hide_button)
         
         # layout configuration
-        layout.addWidget(self.welcomeback_text)
         layout.addWidget(self.login_text)
-        layout.addWidget(self.username_input_box)
         layout.addLayout(password_layout)
         layout.addWidget(self.warning_text)
         layout.addWidget(self.warning_attempts)
@@ -233,16 +186,6 @@ class login_window(QWidget):
 
     # Connect the buttons to the functions
 
-    def signin_window_show(self):
-        """
-        Function to show the signin window when the user clicks on the signin link.
-        """
-        from GUI.signin_interface import signin_window
-        signin_win = signin_window()
-        signin_win.show()
-        self.user_verified = True
-        self.close()
-
 
     def hide_password_func(self):
         """
@@ -254,22 +197,19 @@ class login_window(QWidget):
         else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
 
 
-    def login_clicked_func(self):
+    def verify_clicked_func(self):
         """
         Function to call after the user clicks on the signin button.
         """
 
         # Reads the inputs from the input boxes and tries to sign in
-        self.username_input = self.username_input_box.text()
         self.password_input = self.password_input_box.text()
-        account = functions.Account(username=self.username_input, password=self.password_input)
         self.attempts += 1
 
         self.password_input_box.clear()
-        self.username_input_box.clear()
 
         if self.attempts < 3:
-            self.verified_account = account.verify_user()
+            # self.verified_account = functions.verify_privates()
             if self.verified_account is True:
                 from GUI.menu_interface import menu_window
                 menu_win = menu_window()
@@ -289,10 +229,15 @@ class login_window(QWidget):
         Function that checks if the username and password input boxes are filled
         """
         
-        input_username = self.username_input_box.text()
         input_password = self.password_input_box.text()
 
         if self.attempts < 3:
-            if all([input_username, input_password]): self.login_button.setEnabled(True) 
+            if input_password: self.login_button.setEnabled(True) 
             else: self.login_button.setEnabled(False)
         
+
+
+app = QApplication([])
+window = verify_identity__window()
+window.show()
+app.exec()
