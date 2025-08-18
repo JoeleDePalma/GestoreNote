@@ -203,7 +203,7 @@ class verify_identity__window(QWidget):
         """
 
         # Reads the inputs from the input boxes and tries to sign in
-        self.password_input = self.password_input_box.text()
+        self.password_input = self.password_input_box.text().strip()
         self.attempts += 1
 
         self.password_input_box.clear()
@@ -229,7 +229,7 @@ class verify_identity__window(QWidget):
         Function that checks if the username and password input boxes are filled
         """
         
-        input_password = self.password_input_box.text()
+        input_password = self.password_input_box.text().strip()
 
         if self.attempts < 3:
             if input_password: self.login_button.setEnabled(True) 

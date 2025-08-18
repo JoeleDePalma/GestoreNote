@@ -2,6 +2,7 @@
 
 import importlib.util
 from pathlib import Path
+from pydoc import stripid
 
 # Module's path to load
 functions_path = Path(__file__).parent.parent / "functions.py"
@@ -17,8 +18,8 @@ from PySide6.QtCore import QLine, Qt, QSize
 from PySide6.QtGui import QIcon
 import re
 
-
 images_path = Path(__file__).parent / "Images"
+
 
 class signin_window(QWidget):
 
@@ -52,6 +53,8 @@ class signin_window(QWidget):
         self.characters_warning = QLabel("La password deve contere almeno un carattere speciale")
 
         self.signin_button = QPushButton("Registrati")
+
+        self.username_exists_warning = QLabel("Nome utente già esistente")
 
         self.signin_text = QLabel("Crea il tuo account")
 
@@ -110,12 +113,12 @@ class signin_window(QWidget):
         self.username_input_box.setPlaceholderText("Nome utente")
         self.username_input_box.setFixedSize(350, 40)
         self.username_input_box.setStyleSheet(self.username_password_css)
-        self.username_input_box.textChanged.connect(lambda text: self.changed_text_input(text, "username"))
+        self.username_input_box.textChanged.connect(lambda text: self.changed_text_input(text.strip(), "username"))
 
         self.password_input_box.setPlaceholderText("Password")
         self.password_input_box.setFixedSize(350, 40)
         self.password_input_box.setStyleSheet(self.username_password_css)
-        self.password_input_box.textChanged.connect(lambda text: self.changed_text_input(text, "password"))
+        self.password_input_box.textChanged.connect(lambda text: self.changed_text_input(text.strip(), "password"))
         self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
         
         self.login_link.setFlat(True)
@@ -207,6 +210,8 @@ class signin_window(QWidget):
         self.password_hide_button.setCursor(Qt.PointingHandCursor)
         self.password_hide_button.clicked.connect(self.hide_password_func)
 
+        self.username_exists_warning.setStyleSheet(self.warning_text_css)
+        self.username_exists_warning.setVisible(False)
 
         # Layout Initialization
         layout = QVBoxLayout()
@@ -225,6 +230,7 @@ class signin_window(QWidget):
         layout.addWidget(self.welcome_text)
         layout.addWidget(self.signin_text)
         layout.addWidget(self.username_input_box)
+        layout.addWidget(self.username_exists_warning)
         layout.addWidget(self.username_warning)
         layout.addLayout(password_layout)
         layout.addWidget(self.password_warning)
@@ -248,6 +254,7 @@ class signin_window(QWidget):
         self.login_win.show()
         self.close()
 
+
     def hide_password_func(self):
         """
         Function to hide or show the password in the password input box when the user clicks on the eye button.
@@ -257,22 +264,38 @@ class signin_window(QWidget):
         if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
         else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
 
+
     def signin_clicked_func(self):
         """
         Function to call after the user clicks on the signin button.
         """
+        # Reads the username and password input from the input boxes
+        self.username_input = self.username_input_box.text().strip()
+        self.password_input = self.password_input_box.text().strip()
 
-        # Reads the inputs from the input boxes and tries to sign in
-        self.username_input = self.username_input_box.text()
-        self.password_input = self.password_input_box.text()
         account = functions.Account(username=self.username_input, password=self.password_input)
         self.verified_account, self.public_cryptography = account.sign_in()
 
-        # If the account is verified, we can proceed to the main window
-        self.password_input_box.clear()
-        self.username_input_box.clear()
-        
-        self.close()
+        if not self.verified_account:
+            self.username_exists_warning.setVisible(True)
+            self.username_input_box.setStyleSheet(self.warning_style_css)
+            return
+
+        # Creates the directories
+        directory_all = Path(__file__).parent.parent / self.username_input
+        notes_directory = directory_all / "notes"
+        logs_directory = directory_all / "logs"
+        private_notes_directory = notes_directory / "private"
+        public_notes_directory = notes_directory / "public"
+
+        directory_all.mkdir(parents=True, exist_ok=True)
+        notes_directory.mkdir(parents=True, exist_ok=True)
+        logs_directory.mkdir(parents=True, exist_ok=True)
+        private_notes_directory.mkdir(parents=True, exist_ok=True)
+        public_notes_directory.mkdir(parents=True, exist_ok=True)
+
+        # Open menu window
+        self.open_menu_window()
 
 
     def changed_text_input(self, text, type_changed):
@@ -330,6 +353,7 @@ class signin_window(QWidget):
         elif type_changed == "username":
             
             self.username_input = text
+            self.username_exists_warning.setVisible(False)
 
             if not text:
                 self.username_input_box.setStyleSheet(self.username_password_css)
@@ -350,3 +374,12 @@ class signin_window(QWidget):
 
         if self.valid_password and self.valid_username:
             self.signin_button.setEnabled(True)
+
+    def open_menu_window(self):
+        """
+        Function to open the menu window when all the directories are ready.
+        """
+        from GUI.menu_interface import menu_window
+        win_menu = menu_window(self.username_input)
+        win_menu.show()
+        self.close()

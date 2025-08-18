@@ -10,8 +10,8 @@ functions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(functions)
 
 
-from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
-from PySide6.QtCore import QLine, Qt, QSize
+from PySide6.QtWidgets import QLineEdit, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 
 images_path = Path(__file__).parent / "Images"
@@ -260,8 +260,8 @@ class login_window(QWidget):
         """
 
         # Reads the inputs from the input boxes and tries to sign in
-        self.username_input = self.username_input_box.text()
-        self.password_input = self.password_input_box.text()
+        self.username_input = self.username_input_box.text().strip()
+        self.password_input = self.password_input_box.text().strip()
         account = functions.Account(username=self.username_input, password=self.password_input)
         self.attempts += 1
 
@@ -272,7 +272,7 @@ class login_window(QWidget):
             self.verified_account = account.verify_user()
             if self.verified_account is True:
                 from GUI.menu_interface import menu_window
-                menu_win = menu_window()
+                menu_win = menu_window(self.username_input)
                 menu_win.show()
                 self.close()
 
@@ -289,8 +289,8 @@ class login_window(QWidget):
         Function that checks if the username and password input boxes are filled
         """
         
-        input_username = self.username_input_box.text()
-        input_password = self.password_input_box.text()
+        input_username = self.username_input_box.text().strip()
+        input_password = self.password_input_box.text().strip()
 
         if self.attempts < 3:
             if all([input_username, input_password]): self.login_button.setEnabled(True) 

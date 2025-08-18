@@ -3,23 +3,9 @@
 
 from pathlib import Path
 import os
-
-# Create all required folders BEFORE any other operation
-directory_logs = Path(__file__).parent / "logs"
-directory_logs.mkdir(exist_ok=True)
-
-directory_all_notes = Path(__file__).parent / "notes"
-directory_public_notes = directory_all_notes / "public"
-directory_private_notes = directory_all_notes / "private"
-
-directory_all_notes.mkdir(exist_ok=True)
-directory_public_notes.mkdir(exist_ok=True)
-directory_private_notes.mkdir(exist_ok=True)
-
 import sqlite3
-import subprocess
 import logging
-import getpass
+from types import NoneType
 from argon2 import PasswordHasher, exceptions
 from argon2.low_level import Type, hash_secret_raw
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -34,7 +20,7 @@ cursor.execute("""
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT NOT NULL UNIQUE,
                     publ_pass TEXT NOT NULL,
-                    pub_salt BLOB,
+                    publ_salt BLOB,
                     priv_pass TEXT,
                     priv_salt BLOB)
                     
@@ -55,171 +41,43 @@ def hash_password(password: str) -> str:
     """
     return pass_hash.hash(password)
 
-# Logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filename=str(directory_logs / "file_logs.txt"),
-    filemode="a"
-)
 
 verified_account = False
 notes_exists = False
 repeated = True
 
-def verify_privates(credentials_priv, attempts):
+def verify_privates(username, password_priv, password_priv_input):
     """
     Asks the user to enter the password to access private notes.
     Allows up to 5 attempts.
     """
 
-    
-    temp_pass = password_priv  # Temporarily stores the password for encryption
+    temp_pass = password_priv_input
+
     try:
-        pass_hash.verify(credentials_priv, password_priv)
+        pass_hash.verify(password_priv, password_priv_input)
         logging.info("Private notes access granted")
-        private_cryptography = Cryptography(temp_pass)
+        private_cryptography = Cryptography(username=username, password=temp_pass)
         logging.info("Cryptography object for private notes created successfully")
         temp_pass = None  # Removes the plain password for security
         return private_cryptography
 
-    except Exception:
-        if attempts < 4:
-            logging.warning("Wrong password entered for private notes")
-        else:
-            logging.error("Too many failed attempts for private notes access")
-            exit()
+    except exceptions.VerifyMismatchError:
+        logging.warning("Wrong password entered for private notes")
+        return None
+       
 
-def exists_verify(username):
+def create_private(username, priv_pass_input):
     """
     Checks if a password exists for private notes.
     If not, asks for and saves a new one.
     """
     
-    cursor.execute("SELECT priv_pass FROM users WHERE username = ?", (username,))
-    priv_pass = cursor.fetchone()[0]
-
-        
-    else:
-        verify_privates(priv_pass)
-        logging.info("Private notes password saved successfully")
-
-        private_cryptography = Cryptography(temp_pass)
-        logging.info("Cryptography object for private notes created successfully")
-        temp_pass = None
-        sleep(0.5)
-        return private_cryptography
-
-def notes_considered(del_mod):
-    """
-    Shows the list of notes (private and public) and asks the user which one to consider.
-    Args:
-        del_mod: string indicating the action (e.g. 'da eliminare', 'da aprire')
-    Returns:
-        (selected note index, note type: 1=private, 2=public)
-    """
-    sep_notes_list = [os.listdir(directory_private_notes), os.listdir(directory_public_notes)]
-    notes_list_tot = sep_notes_list[0] + sep_notes_list[1]
-    second_rotation = False
-    print()
-
-    for a in sep_notes_list:
-        count = 1
-        if not a:
-            print(f"Non hai appunti {'privati' if second_rotation is False else 'pubblici'} {del_mod}")
-        else:
-            print("Appunti privati:") if second_rotation is False else print("Appunti pubblici:")
-        for i in a:
-            print(f"    {count}. {i[:-4]}")
-            count += 1
-            notes_list_tot.append(i)
-        sleep(1.5)
-        print()
-        second_rotation = True
-
-    sleep(3)
-
-    private_cryptography = None  # Initialize variable for private encryption
-    # Input request with loop until valid
-    while True:
-        try:
-            os.system("cls")
-            sleep(0.5)
-            priv_publ = int(input(f"""Inserisci il numero dello stato degli appunti {del_mod}:
-    1. Privati
-    2. Pubblici
-"""))
-            if priv_publ < 1 or priv_publ > 2:
-                sleep(0.5)
-                print("Inserisci un numero valido")
-                logging.error("Invalid number entered for note type selection")
-            else:
-                if priv_publ == 1:
-                    if not sep_notes_list[0]: raise NotExistingNotes
-                    else: private_cryptography = exists_verify()
-                elif priv_publ == 2:
-                    if not sep_notes_list[1]: raise NotExistingNotes
-                break
-        except ValueError:
-            sleep(0.5)
-            print()
-            print("Inserisci un numero!")
-            print()
-            logging.error("Non-numeric value entered for note type selection")
-        except NotExistingNotes:
-            sleep(0.5)
-            print(f"Non hai appunti {'privati' if priv_publ == 1 else 'pubblici'} {del_mod}")
-            sleep(0.5)
-            logging.warning(f"Attempted to select {'private' if priv_publ == 1 else 'public'} notes but none exist")
-    count = 1
-    os.system("cls")
-    print(f"Inserisci il numero corrispondente agli appunti privati {del_mod}:") if priv_publ == 1 else print(f"Inserisci il numero corrispondente agli appunti pubblici {del_mod}:")
-    for i in sep_notes_list[priv_publ-1]:
-        print(f"    {count}. {i[:-4]}")
-        count += 1
-
-    notes_to_consider = None
-    while True:
-        try:
-            notes_to_consider = int(input())
-            if 1 <= notes_to_consider <= len(sep_notes_list[priv_publ-1]): break
-            else:
-                sleep(0.5)
-                print("Numero non valido, riprova.")
-                logging.error("Invalid number entered for note selection")
-        except ValueError:
-            sleep(0.5)
-            print("Inserisci un numero.")
-            logging.error("Non-numeric value entered for note selection")
-
-    if del_mod != "da eliminare": return notes_to_consider, priv_publ, private_cryptography
-
-    return notes_to_consider, priv_publ
-
-def delete_notes():
-    """
-    Handles the procedure for deleting a note chosen by the user.
-    """
-    sep_notes_list = [os.listdir(directory_private_notes), os.listdir(directory_public_notes)]
-    notes_to_delete, priv_publ = notes_considered("da eliminare")
-    if priv_publ == 1:
-        if sep_notes_list[0]:
-            notes = FileNotes(directory_private_notes/sep_notes_list[0][notes_to_delete-1])
-            notes.delete(sep_notes_list[0], notes_to_delete-1, directory_private_notes)
-        else:
-            print("Non hai appunti privati da eliminare")
-            logging.warning("Attempted to delete private notes but none exist")
-            return
-    else:
-        if sep_notes_list[1]:
-            notes = FileNotes(directory_public_notes/sep_notes_list[1][notes_to_delete-1])
-            notes.delete(sep_notes_list[1], notes_to_delete-1, directory_public_notes)
-        else:
-            print("Non hai appunti pubblici da eliminare")
-            logging.warning("Attempted to delete public notes but none exist")
-            return
-    logging.info(f"Note deleted: {sep_notes_list[priv_publ-1][notes_to_delete-1]} in {'private' if priv_publ == 1 else 'public'}")
-    sleep(0.5)
+    private_cryptography = Cryptography(username= username, password=priv_pass_input)
+    hashed_password = pass_hash.hash(priv_pass_input)
+    cursor.execute("UPDATE users SET priv_pass = ? WHERE username = ?", (hashed_password, username))
+    conn.commit()
+    return private_cryptography
 
 
 class Cryptography():
@@ -256,7 +114,7 @@ class Cryptography():
 
             return salt
         
-        cursor.execute("SELECT publ_pass FROM users WHERE username = ?", self.username,)
+        cursor.execute("SELECT publ_pass FROM users WHERE username = ?", (self.username,))
         password = cursor.fetchone()[0]
 
         try:
@@ -308,6 +166,7 @@ class Cryptography():
             decoded_data = decrypted_data.decode('utf-8', errors='ignore')
             file.write(decoded_data)
 
+
 class Account:
     """
     Handles user account registration and verification.
@@ -326,49 +185,87 @@ class Account:
             "password": self.password
         }
 
-        cursor.execute("""
         
-                        INSERT INTO users(username, publ_pass) VALUES (?, ?)""", 
-                        (credentials["username"], credentials["password"])
+        try:
+            cursor.execute("SELECT username FROM users WHERE username = ?", (credentials["username"],))
+            existing_user = cursor.fetchone()
+            if existing_user:
+                raise UsernameAlreadyExists 
+
+
+        
+            cursor.execute("""
+        
+                            INSERT INTO users(username, publ_pass) VALUES (?, ?)""", 
+                            (credentials["username"], credentials["password"])
                         
-                        )
+                            )
 
-        conn.commit()
+            conn.commit()
 
-        logging.info(f"Credentials saved for user: {self.username}")
-        
+            directory_all = Path(__file__).parent / self.username
+            directory_all.mkdir(exist_ok=True)
+
+            directory_logs = directory_all / "logs"  
+            directory_logs.mkdir(exist_ok=True)
+
+            directory_all_notes = directory_all / "notes"
+            directory_public_notes = directory_all_notes / "public"
+            directory_private_notes = directory_all_notes / "private"
+
+            directory_all_notes.mkdir(exist_ok=True)
+            directory_public_notes.mkdir(exist_ok=True)
+            directory_private_notes.mkdir(exist_ok=True)
+
+            # Logging configuration
+            logging.basicConfig(
+                level=logging.DEBUG,
+                format='%(asctime)s - %(levelname)s - %(message)s',
+                filename=str(directory_logs / "file_logs.txt"),
+                filemode="a"
+            )
+
+            logging.info(f"Credentials saved for user: {self.username}")
+            return True
+
     
+        except UsernameAlreadyExists:
+            logging.error(f"Username '{self.username}' already exists.")
+            return False
+
+
     def sign_in(self):
         """
         User registration procedure.
         """
         password_temp = self.password
         self.password = hash_password(self.password)
-        self.create_account()
+        public_cryptography = None
+        verified_account = self.create_account()
+
+        if not verified_account:
+            return verified_account, public_cryptography
+
         logging.info(f"Account registered: {self.username}")
         public_cryptography = Cryptography(password_temp, self.username)
         password_temp = None
-        verified_account = True
         return verified_account, public_cryptography
+        
 
     def verify_user(self):
         """
         Verifies user credentials.
         """
         
-        
-        cursor.execute("SELECT username, publ_pass FROM users WHERE username = ?"), (self.username,)
-        credentials = cursor.fetchone()
-        credentials = {
-                        "username": credentials[0],
-                        "password": credentials[1]
-                        }
-
         try:
-            if not credentials["username"]:
-                raise VerifyError("Username non trovato")
+            cursor.execute("SELECT username, publ_pass FROM users WHERE username = ?", (self.username,))
+            credentials = cursor.fetchone()
+            credentials = {
+                            "username": credentials[0],
+                            "password": credentials[1]
+                            }
 
-        except VerifyError:
+        except TypeError:
             logging.error("Username not found during verification")
             return False
 
@@ -380,6 +277,12 @@ class Account:
             logging.error("Password doesn't match, verification failed")
             return False
         
+
+class UsernameAlreadyExists(Exception):
+    """
+    Custom exception for when a username already exists:
+    """
+    pass
 
 class VerifyError(Exception):
     """
@@ -412,40 +315,28 @@ class FileNotes(File):
         """
         Opens the notes file with Notepad and reports any changes.
         """
-        type_cryptography.decrypt(self.directory)
-        process = subprocess.Popen(["notepad.exe", self.directory])
-        last_edit = os.path.getmtime(self.directory)
-        while process.poll() is None:
-            sleep(0.5)
-            new_edit = os.path.getmtime(self.directory)
-            if new_edit != last_edit:
-                print("Il file è stato modificato")
-                last_edit = new_edit
-                logging.info(f"File {self.directory} modified")
-        type_cryptography.encrypt(self.directory)
+        
+        return type_cryptography.decrypt(self.directory)
 
-    def create(self, type_cryptography):
+    def create(self):
         """
-        Creates a new notes file and opens it.
+        Creates a new notes file.
         """
-        with open(self.directory, "w") as file:
-            file.write("Scrivi i tuoi appunti qui")
-        print("File creato correttamente!")
-        logging.info(f"File created: {self.directory.name}")
-        sleep(0.5)
-        type_cryptography.encrypt(self.directory)
-        self.open(type_cryptography)
+        if not os.path.exists(self.directory):
+            with open(self.directory, "w"):
+                pass
 
-    def delete(self, notes_list, notes_to_delete, directory_considerata):
+            logging.info(f"File created: {self.directory.name}")
+            return True
+
+        else: return False
+
+    def delete(self, notes_to_delete, directory_considerata):
         """
         Deletes a selected notes file.
         """
-        global deleted
-        for i in notes_list:
-            if notes_list[notes_to_delete] == i:
-                os.remove(directory_considerata / i)
-                print("Appunti eliminati correttamente!")
-                deleted = True
-        if not deleted:
-            print("Numero non valido")
+        
+        os.remove(directory_considerata / f"{notes_to_delete}.txt")
+        logging.info("File correctly deleted")
+        
 
