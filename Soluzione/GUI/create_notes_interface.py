@@ -12,9 +12,11 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 
 class create_notes_window(QWidget):
-    def __init__(self, username):
+    def __init__(self, username, public_cryptography, private_cryptography):
         super().__init__()
         self.username = username
+        self.public_cryptography = public_cryptography
+        self.private_cryptography = private_cryptography
 
         # Window initialization
         self.setWindowTitle("Crea note")
@@ -100,7 +102,7 @@ class create_notes_window(QWidget):
 
         if created:
             from GUI.menu_interface import menu_window
-            win_menu = menu_window(self.username)
+            win_menu = menu_window(self.username, self.public_cryptography, self.private_cryptography)
             win_menu.show()
             self.close()
 

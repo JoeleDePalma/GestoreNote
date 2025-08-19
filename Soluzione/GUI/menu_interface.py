@@ -3,7 +3,6 @@
 
 from pathlib import Path
 import importlib.util
-from venv import create
 
 functions_path = Path(__file__).parent.parent / "functions.py"
 
@@ -11,7 +10,7 @@ spec = importlib.util.spec_from_file_location("functions", str(functions_path))
 functions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(functions)
 
-from PySide6.QtWidgets import QApplication, QToolBar, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
+from PySide6.QtWidgets import QApplication, QToolBar, QLineEdit, QTextEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QPoint
 from PySide6.QtGui import QIcon
 import sqlite3
@@ -24,12 +23,17 @@ images_path = Path(__file__).parent / "images"
 
 class menu_window(QWidget):
     
-    def __init__(self, username):
+    def __init__(self, username, public_cryptography, private_cryptography):
         super().__init__()
         self.username = username
+        self.public_cryptography = public_cryptography
+        self.private_cryptography = private_cryptography
+
+        self.notes_opened = None
+        self.note = None
 
         self.setWindowTitle("Menu")
-        self.setFixedSize(800, 600)
+        self.setFixedSize(1000, 600)
         
         # Initialization variables
 
@@ -101,8 +105,21 @@ class menu_window(QWidget):
 
                         """
 
+        self.notes_box_style = """
+            
+            QTextEdit{{
+            
+                    color: {text_color};
+                    background-color: {background_color};
+                    border: 1px solid {border_color};
+                    font-size: 16px;
+                    border-radius: 10px;
+                    
+            }}
+                               """
 
-        self.notes_style_day = dict(
+
+        self.buttons_style_day = dict(
                      
                 normal_text_color = "black",
                 normal_border_color = "black",
@@ -118,6 +135,29 @@ class menu_window(QWidget):
                                                    
                                               )
 
+        self.buttons_style_night = dict(
+                     
+                normal_text_color = "white",
+                normal_border_color = "#5A5A5C",
+                normal_background_color = "#3A3A3C",
+            
+                hover_text_color = "white",
+                hover_border_color = "#5A5A5C",
+                hover_background_color = "#505052",
+
+                pressed_text_color = "white",
+                pressed_border_color = "#5A5A5C",
+                pressed_background_color = "#2C2C2E"
+                                                   
+                                              )
+
+        self.notes_box_style_day = dict(
+            
+                text_color = "black",
+                background_color = "white",
+                border_color="black"
+                                      
+                                        )
 
         # Input camps and texts initialization
         
@@ -157,6 +197,9 @@ class menu_window(QWidget):
         self.toolbar_settings_exit = QPushButton(QIcon(str(images_path / "exit_icon.jpg")), "Esci")
         self.tools_settings_list.append(self.toolbar_settings_exit)
 
+        self.notes_text_box = QTextEdit()
+
+
         # Input camps and text modellation
 
         self.toolbar_nightmode_button.clicked.connect(self.night_mode)
@@ -186,7 +229,14 @@ class menu_window(QWidget):
 
         self.toolbar_notes_create.clicked.connect(self.create_notes_func)
 
+        self.toolbar_notes_save.clicked.connect(self.save_note)
+
         self.toolbar_settings_exit.clicked.connect(self.exit)
+
+        self.toolbar_notes_delete.clicked.connect(self.delete_note)
+
+        self.notes_text_box.setFixedSize(550, 550)
+        self.notes_text_box.setStyleSheet(self.notes_box_style.format(**self.notes_box_style_day))
 
         # IMPORTANT: Tools styles are in "toolbar layout" section
         
@@ -214,27 +264,32 @@ class menu_window(QWidget):
                 pressed_background_color = "#F3F3F3"
                                                    
                                               ))
+
         self.toolbar_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
         # Notes layout
         self.notes_directory = Path(__file__).parent.parent / self.username / "notes"
-        self.public_notes = os.listdir(self.notes_directory/"public")
-        self.private_notes = os.listdir(self.notes_directory/"private")
-        self.sep_notes_list = [self.public_notes, self.private_notes]
         self.notes_buttons = [[], []]
 
         self.notes_layout = QVBoxLayout()
 
-        self.set_notes(style = self.notes_style_day)
+        self.set_notes(style = self.buttons_style_day)
 
         self.notes_layout.setAlignment(Qt.AlignRight | Qt.AlignTop)
 
+        # Notes text box layout configuration
+
+        self.notes_text_box_layout = QVBoxLayout()
+        self.notes_text_box_layout.addWidget(self.notes_text_box)
+        self.notes_text_box_layout.setAlignment(Qt.AlignCenter | Qt.AlignTop)
 
         # main layout configuration
 
         self.main_layout = QHBoxLayout()
         self.main_layout.addLayout(self.toolbar_layout)
+        self.main_layout.addLayout(self.notes_text_box_layout)
         self.main_layout.addLayout(self.notes_layout)
+        self.main_layout.setAlignment(Qt.AlignTop)
 
         # layout configuration
 
@@ -282,6 +337,19 @@ class menu_window(QWidget):
 
 
     def set_notes(self, style, visible=False):
+        """
+        Adds or modify the notes layout with notes buttons
+        """
+        self.public_notes = os.listdir(self.notes_directory/"public")
+        self.private_notes = os.listdir(self.notes_directory/"private")
+        self.sep_notes_list = [self.public_notes, self.private_notes]
+
+        while self.notes_layout.count():
+            item = self.notes_layout.takeAt(0)  
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater() 
+
         def visibility(buttons_list):
             is_visible = buttons_list[0].isVisible() if buttons_list else False
             for button in buttons_list:
@@ -306,6 +374,7 @@ class menu_window(QWidget):
                         button.setFixedSize(160, 30)
                         button.setStyleSheet(self.notes_style.format(**style))
                         button.setVisible(visible)
+                        button.clicked.connect(lambda checked, note_name = j, state="public": self.open_note_func(note_name, state))
                         self.notes_buttons[0].append(button)
                         self.notes_layout.addWidget(button)
 
@@ -327,11 +396,15 @@ class menu_window(QWidget):
                         button.setFixedSize(160, 30)
                         button.setStyleSheet(self.notes_style.format(**style))
                         button.setVisible(visible)
+                        button.clicked.connect(lambda checked, note_name = j, state="private": self.open_note(note_name, state))
                         self.notes_buttons[1].append(button)
                         self.notes_layout.addWidget(button)
 
 
     def notes_appear(self, hide = False):
+        """
+        Shows or hides the notes buttons and the public/private notes buttons.
+        """
         if not hide:
             if self.public_notes_button.isVisible():
                 self.public_notes_button.setVisible(False)
@@ -356,7 +429,7 @@ class menu_window(QWidget):
 
     def create_notes_func(self):
         from GUI.create_notes_interface import create_notes_window
-        win_create = create_notes_window(self.username)
+        win_create = create_notes_window(self.username, self.public_cryptography, self.private_cryptography)
         win_create.show()
         self.close()
 
@@ -365,103 +438,148 @@ class menu_window(QWidget):
         
         if self.night_mode_on:
 
-            style = dict(
-            
-            normal_text_color = "white",
-            normal_border_color = "#5A5A5C",
-            normal_background_color = "#3A3A3C",
-            
-            hover_text_color = "white",
-            hover_border_color = "#5A5A5C",
-            hover_background_color = "#505052",
-
-            pressed_text_color = "white",
-            pressed_border_color = "#5A5A5C",
-            pressed_background_color = "#2C2C2E"
-
-                        )
+            style_notes = dict(
+                
+                text_color= "white", 
+                background_color = "#3A3A3C",
+                border_color="#5A5A5C"
+                
+                )
 
             self.toolbar_nightmode_button.setText("🌞 Modalità giorno")
 
-            self.set_tools(120, style = style)
+            self.set_tools(120, style = self.buttons_style_night)
 
-            style["margin"] = "-15px"
-            self.public_notes_button.setStyleSheet(self.notes_style.format(**style))
-            self.private_notes_button.setStyleSheet(self.notes_style.format(**style))
+            self.buttons_style_night["margin"] = "-15px"
+            self.public_notes_button.setStyleSheet(self.notes_style.format(**self.buttons_style_night))
+            self.private_notes_button.setStyleSheet(self.notes_style.format(**self.buttons_style_night))
             
-            style["margin"] = "0px"
+            self.buttons_style_night["margin"] = "0px"
             for i in range(2):
                 for j in self.notes_buttons[i]:
-                    j.setStyleSheet(self.notes_style.format(**style))
+                    j.setStyleSheet(self.notes_style.format(**self.buttons_style_night))
             self.notes_appear(hide = True)
 
-            style.pop("margin")
+            self.buttons_style_night.pop("margin")
 
             self.toolbar_notes_show.setText("Mostra")
 
-            self.profile_button.setStyleSheet(self.tools_style.format(**style))
+            self.profile_button.setStyleSheet(self.tools_style.format(**self.buttons_style_night))
             
             self.setStyleSheet("background-color: #1C1C1E")
+
+            self.notes_text_box.setStyleSheet(self.notes_box_style.format(**style_notes))
             
 
         else:
 
-            style = dict(
-            
-            normal_text_color = "black",
-            normal_border_color = "black",
-            normal_background_color = "white",
-
-            hover_text_color = "black",
-            hover_border_color = "black",
-            hover_background_color = "#F7F7F7",
-
-            pressed_text_color = "black",
-            pressed_border_color = "black",
-            pressed_background_color = "#F3F3F3"
-            
-                        )
+            style_notes = dict(
+                
+                text_color= "black", 
+                background_color = "white",
+                border_color= "black"
+                
+                )
 
             self.toolbar_nightmode_button.setText("🌙 Modalità notte")
 
-            self.set_tools(120, style = style)
+            self.set_tools(120, style = self.buttons_style_day)
 
-            style["margin"] = "-15px"
-            self.public_notes_button.setStyleSheet(self.notes_style.format(**style))
-            self.private_notes_button.setStyleSheet(self.notes_style.format(**style))
+            self.buttons_style_day["margin"] = "-15px"
+            self.public_notes_button.setStyleSheet(self.notes_style.format(**self.buttons_style_day))
+            self.private_notes_button.setStyleSheet(self.notes_style.format(**self.buttons_style_day))
             
-            style["margin"] = "0px"
+            self.buttons_style_night["margin"] = "0px"
             for i in range(2):
                 for j in self.notes_buttons[i]:
-                    j.setStyleSheet(self.notes_style.format(**style))
+                    j.setStyleSheet(self.notes_style.format(**self.buttons_style_day))
             self.notes_appear(hide = True)
             
-            style.pop("margin")
+            self.buttons_style_night.pop("margin")
 
             self.toolbar_notes_show.setText("Mostra")
 
-            self.profile_button.setStyleSheet(self.tools_style.format(**style))   
+            self.profile_button.setStyleSheet(self.tools_style.format(**self.buttons_style_day))   
             
             self.setStyleSheet("background-color: white")
+
+            self.notes_text_box.setStyleSheet(self.notes_box_style.format(**style_notes))
     
+
+    def open_note_func(self, note_name, state):
+        """
+        Shows in the notes text box the content of the note selected.
+        """
+        if self.notes_opened:
+            self.note_close(notes_opened)
+
+        self.note = functions.FileNotes(Path(__file__).parent.parent / self.username / "notes" / state / note_name)
+        
+        if state == "public": 
+            text = self.note.open_note(self.public_cryptography)
+
+        if text:
+            self.notes_text_box.setPlainText(text)
+
+        else:
+            self.notes_text_box.setPlaceholderText("Scrivi i tuoi appunti qui")
+        
     
+    def save_note(self):
+        """
+        Save the content of the notes text box into the opened note.
+        """
+        text = self.notes_text_box.toPlainText()
+        if self.note:
+            self.note.save(text, self.public_cryptography)
+            
+            if not text: self.notes_text_box.setPlaceholderText("Appunti salvati con successo.")
+
+        else:
+            self.notes_text_box.setPlaceholderText("Nessuna nota aperta per il salvataggio.")
+
+
+    def delete_note(self):
+        if self.note:
+            if self.note.delete():
+                self.notes_text_box.clear()
+                self.notes_text_box.setPlaceholderText("Nota eliminata con successo.")
+                self.note = None
+                self.set_notes(self.buttons_style_day if not self.night_mode_on else self.buttons_style_night, visible=True)
+            
+        else: self.notes_text_box.setPlaceholderText("Errore durante l'eliminazione della nota.")
+
+
     def exit(self):
+        """
+        Go back to the sign-in interface.
+        """
         from GUI.signin_interface import signin_window
         win_signin = signin_window()
         win_signin.show()
         self.close()
 
+
     def tools_settings_show(self):
+        """
+        Shows/hides the tools for settings management.
+        """
         is_visible = self.tools_settings_list[0].isVisible()
         for i in self.tools_settings_list:
             i.setVisible(not is_visible)
 
     def tools_notes_show(self):
+        """
+        Shows/hides the tools for notes management.
+        """
         is_visible = self.toolbar_notes_show.isVisible()
         for i in self.tools_notes_list:
             i.setVisible(not is_visible)
 
     def close_app(self):
+        """
+        Close the application and the database connection.
+        """
         self.close()
         cursor.close()
         conn.close()

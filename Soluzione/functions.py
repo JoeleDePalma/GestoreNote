@@ -159,12 +159,23 @@ class Cryptography():
         """
         with open(directory, "rb") as file:
             encrypted_data = file.read()
+
+        # Check if the file is empty
+        if len(encrypted_data) < 12:
+            return ""
+
         nonce = encrypted_data[:12]
         cipher_text = encrypted_data[12:]
-        with open(directory, "w") as file:
+
+        try:
             decrypted_data = self.aesgcm.decrypt(nonce, cipher_text, None)
             decoded_data = decrypted_data.decode('utf-8', errors='ignore')
-            file.write(decoded_data)
+            return decoded_data
+
+        except Exception as e:
+            logging.error(f"Decryption failed for file {directory}: {str(e)}")
+            return "ERROR: Unable to decrypt the file."
+
 
 
 class Account:
@@ -267,15 +278,18 @@ class Account:
 
         except TypeError:
             logging.error("Username not found during verification")
-            return False
+            return False, None
 
         try:
+            pass_temp = self.password
             pass_hash.verify(credentials["password"], self.password)
-            return True
+            public_cryptography = Cryptography(pass_temp, self.username)
+            pass_temp = None
+            return True, public_cryptography
         
         except exceptions.VerifyMismatchError:
             logging.error("Password doesn't match, verification failed")
-            return False
+            return False, None
         
 
 class UsernameAlreadyExists(Exception):
@@ -311,12 +325,25 @@ class FileNotes(File):
     def __init__(self, directory):
         super().__init__(directory)
 
-    def open(self, type_cryptography):
+    def open_note(self, type_cryptography):
         """
-        Opens the notes file with Notepad and reports any changes.
+        Opens the notes file, decrypts its content, and re-encrypts it immediately.
         """
-        
-        return type_cryptography.decrypt(self.directory)
+        if self.directory.stat().st_size != 0:
+            # Decrypt the file content
+            text = type_cryptography.decrypt(self.directory)
+
+            # Re-encrypt the file immediately
+            with open(self.directory, "w") as file:
+                file.write(text)
+            type_cryptography.encrypt(self.directory)
+
+            logging.info(f"File {self.directory.name} decrypted and re-encrypted.")
+        else:
+            text = ""
+
+        return text
+
 
     def create(self):
         """
@@ -331,12 +358,27 @@ class FileNotes(File):
 
         else: return False
 
-    def delete(self, notes_to_delete, directory_considerata):
+    def delete(self):
         """
         Deletes a selected notes file.
         """
         
-        os.remove(directory_considerata / f"{notes_to_delete}.txt")
-        logging.info("File correctly deleted")
+        try:
+            os.remove(self.directory)
+            logging.info("File correctly deleted")
+            return True
+
+        except:
+            return False
+
+    def save(self, text, type_cryptography):
+        """
+        Saves the chenges in the notes file.
+        """
         
+        with open(self.directory, "w") as file:
+            file.write(text)
+
+        type_cryptography.encrypt(self.directory)
+        logging.info(f"Saved the file changes: {self.directory.name}")
 

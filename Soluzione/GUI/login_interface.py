@@ -22,6 +22,8 @@ class login_window(QWidget):
         super().__init__()
 
         # Variables initialization
+        self.private_cryptography = None
+        self.public_cryptography = None
 
         self.valid_username = False
         self.valid_password = False
@@ -269,10 +271,10 @@ class login_window(QWidget):
         self.username_input_box.clear()
 
         if self.attempts < 3:
-            self.verified_account = account.verify_user()
-            if self.verified_account is True:
+            self.verified_account, self.public_cryptography = account.verify_user()
+            if self.verified_account:
                 from GUI.menu_interface import menu_window
-                menu_win = menu_window(self.username_input)
+                menu_win = menu_window(username = self.username_input, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography)
                 menu_win.show()
                 self.close()
 

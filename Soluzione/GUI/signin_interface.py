@@ -27,7 +27,8 @@ class signin_window(QWidget):
         super().__init__()
 
         # Variables initialization
-
+        self.private_cryptography = None
+            
         self.valid_username = False
         self.valid_password = False
         self.hidden_password = True
@@ -380,6 +381,6 @@ class signin_window(QWidget):
         Function to open the menu window when all the directories are ready.
         """
         from GUI.menu_interface import menu_window
-        win_menu = menu_window(self.username_input)
+        win_menu = menu_window(self.username_input, self.public_cryptography, self.private_cryptography)
         win_menu.show()
         self.close()
