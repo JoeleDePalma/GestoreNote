@@ -182,9 +182,10 @@ class Account:
     """
     Handles user account registration and verification.
     """
-    def __init__(self, username, password):
+    def __init__(self, username, password = None, priv_pass = None):
         self.username = username
         self.password = password
+        self.priv_pass = priv_pass
 
     def create_account(self):
         """
@@ -193,7 +194,8 @@ class Account:
         logging.info(f"Account created: {self.username}")
         credentials = {
             "username": self.username,
-            "password": self.password
+            "password": self.password,
+            "priv_pass": self.priv_pass
         }
 
         
@@ -207,8 +209,8 @@ class Account:
         
             cursor.execute("""
         
-                            INSERT INTO users(username, publ_pass) VALUES (?, ?)""", 
-                            (credentials["username"], credentials["password"])
+                            INSERT INTO users(username, publ_pass, priv_pass) VALUES (?, ?)""", 
+                            (credentials["username"], credentials["password"], credentials["priv_pass"])
                         
                             )
 
@@ -250,17 +252,19 @@ class Account:
         User registration procedure.
         """
         password_temp = self.password
+        priv_pass_temp = self.priv_pass
         self.password = hash_password(self.password)
-        public_cryptography = None
+        self.priv_pass = hash_password(self.priv_pass)
         verified_account = self.create_account()
 
         if not verified_account:
-            return verified_account, public_cryptography
+            return verified_account, None, None
 
         logging.info(f"Account registered: {self.username}")
         public_cryptography = Cryptography(password_temp, self.username)
+        private_cryptography = Cryptography(priv_pass_temp, self.username)
         password_temp = None
-        return verified_account, public_cryptography
+        return verified_account, public_cryptography, private_cryptography
         
 
     def verify_user(self):
@@ -289,6 +293,25 @@ class Account:
         
         except exceptions.VerifyMismatchError:
             logging.error("Password doesn't match, verification failed")
+            return False, None
+
+
+    def verify_priv_user(self):
+        """
+        Verify the real identity of the user through the password for private notes.
+        """
+        
+        conn.execute("SELECT priv_pass FROM users WHERE username = ?", (self.username,))
+        priv_pass = cursor.fetchone[0]
+        temp_pass = self.password
+
+        try:
+            pass_hash.verify(priv_pass, self.password)
+            private_cryptography = Cryptography(temp_pass, self.username)
+            return True, private_cryptography
+
+        except exceptions.VerifyMismatchError:
+            temp_pass = None
             return False, None
         
 

@@ -23,11 +23,12 @@ images_path = Path(__file__).parent / "images"
 
 class menu_window(QWidget):
     
-    def __init__(self, username, public_cryptography, private_cryptography):
+    def __init__(self, username, public_cryptography, private_cryptography, account_verified = False):
         super().__init__()
         self.username = username
         self.public_cryptography = public_cryptography
         self.private_cryptography = private_cryptography
+        self.account_verified = account_verified
 
         self.notes_opened = None
         self.note = None
@@ -193,9 +194,20 @@ class menu_window(QWidget):
 
         self.toolbar_close_button = QPushButton("❌ Chiudi")
         self.toolbar_list.append(self.toolbar_close_button)
+        
+
+        if self.account_verified:
+            self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "verified_icon.png")), " Verifica")
+         
+        else: 
+            self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "not_verified_icon.png")), " Verificato")
+
+        self.tools_settings_list.append(self.toolbar_settings_verify)
+
 
         self.toolbar_settings_exit = QPushButton(QIcon(str(images_path / "exit_icon.jpg")), "Esci")
         self.tools_settings_list.append(self.toolbar_settings_exit)
+
 
         self.notes_text_box = QTextEdit()
 
@@ -232,6 +244,8 @@ class menu_window(QWidget):
         self.toolbar_notes_save.clicked.connect(self.save_note)
 
         self.toolbar_settings_exit.clicked.connect(self.exit)
+
+        self.toolbar_notes_rename.clicked.connect(self.rename_notes_func)
 
         self.toolbar_notes_delete.clicked.connect(self.delete_note)
 
@@ -396,7 +410,7 @@ class menu_window(QWidget):
                         button.setFixedSize(160, 30)
                         button.setStyleSheet(self.notes_style.format(**style))
                         button.setVisible(visible)
-                        button.clicked.connect(lambda checked, note_name = j, state="private": self.open_note(note_name, state))
+                        button.clicked.connect(lambda checked, note_name = j, state="private": self.open_note_func(note_name, state))
                         self.notes_buttons[1].append(button)
                         self.notes_layout.addWidget(button)
 
@@ -432,6 +446,15 @@ class menu_window(QWidget):
         win_create = create_notes_window(self.username, self.public_cryptography, self.private_cryptography)
         win_create.show()
         self.close()
+
+    def rename_notes_func(self):
+        if self.notes_opened:
+            from GUI.rename_notes_interface import rename_notes_window
+            rename_win = rename_notes_window(username = self.username, private_cryptography = self.private_cryptography, public_cryptography = self.public_cryptography, title = self.notes_opened)
+            rename_win.show()
+            self.close()
+
+        self.notes_text_box.setPlaceholderText("Nessuna nota aperta per la rinomina.")
 
     def night_mode(self):
         self.night_mode_on = not self.night_mode_on
@@ -510,18 +533,27 @@ class menu_window(QWidget):
         """
         Shows in the notes text box the content of the note selected.
         """
-        if self.notes_opened:
-            self.note_close(notes_opened)
 
         self.note = functions.FileNotes(Path(__file__).parent.parent / self.username / "notes" / state / note_name)
         
         if state == "public": 
             text = self.note.open_note(self.public_cryptography)
 
+        elif state == "private":
+            if self.account_verified:
+                text = self.note.open_note(self.private_cryptography)
+
+            else:
+                self.notes_text_box.clear()
+                self.notes_text_box.setPlaceholderText("Account non verificato. Impossibile aprire la nota.")
+                self.note = None
+                return
+
         if text:
             self.notes_text_box.setPlainText(text)
 
         else:
+            self.notes_text_box.clear()
             self.notes_text_box.setPlaceholderText("Scrivi i tuoi appunti qui")
         
     

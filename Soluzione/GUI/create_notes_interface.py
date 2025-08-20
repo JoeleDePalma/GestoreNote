@@ -102,7 +102,7 @@ class create_notes_window(QWidget):
 
         if created:
             from GUI.menu_interface import menu_window
-            win_menu = menu_window(self.username, self.public_cryptography, self.private_cryptography)
+            win_menu = menu_window(self.username, self.public_cryptography, self.private_cryptography, account_verified = self.account_verified)
             win_menu.show()
             self.close()
 

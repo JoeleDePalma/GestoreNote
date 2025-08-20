@@ -2,7 +2,6 @@
 
 import importlib.util
 from pathlib import Path
-from pydoc import stripid
 
 # Module's path to load
 functions_path = Path(__file__).parent.parent / "functions.py"
@@ -31,7 +30,9 @@ class signin_window(QWidget):
             
         self.valid_username = False
         self.valid_password = False
+        self.valid_priv_pass = False
         self.hidden_password = True
+        self.hidden_priv_pass = True
 
         # Window initialization
         self.setWindowTitle("Registrati")
@@ -47,11 +48,17 @@ class signin_window(QWidget):
         
         self.password_input_box = QLineEdit()
 
+        self.priv_pass_input_box = QLineEdit()
+
         self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
 
-        self.password_warning = QLabel("La password deve contenere almeno 8 caratteri maiuscoli e minuscoli")
+        self.priv_pass_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
 
-        self.characters_warning = QLabel("La password deve contere almeno un carattere speciale")
+        self.password_warning = QLabel("Le password devono contenere almeno 8 caratteri, maiuscoli e minuscoli")
+
+        self.characters_warning = QLabel("Le password devono contenere almeno un carattere speciale")
+
+        self.same_password_warning = QLabel("Le password devono essere diverse")
 
         self.signin_button = QPushButton("Registrati")
 
@@ -120,7 +127,13 @@ class signin_window(QWidget):
         self.password_input_box.setFixedSize(350, 40)
         self.password_input_box.setStyleSheet(self.username_password_css)
         self.password_input_box.textChanged.connect(lambda text: self.changed_text_input(text.strip(), "password"))
-        self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
+        self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by defaultself.password_input_box.setPlaceholderText("Password")
+        
+        self.priv_pass_input_box.setPlaceholderText("Password per i file privati")
+        self.priv_pass_input_box.setFixedSize(350, 40)
+        self.priv_pass_input_box.setStyleSheet(self.username_password_css)
+        self.priv_pass_input_box.textChanged.connect(lambda text: self.changed_text_input(text.strip(), "priv_pass"))
+        self.priv_pass_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
         
         self.login_link.setFlat(True)
         self.login_link.setFixedSize(160, 20)
@@ -200,6 +213,9 @@ class signin_window(QWidget):
         self.characters_warning.setStyleSheet(self.warning_text_css)
         self.characters_warning.setVisible(False)
 
+        self.same_password_warning.setStyleSheet(self.warning_text_css)
+        self.same_password_warning.setVisible(False)
+
         self.password_hide_button.setFixedSize(50, 30)
         self.password_hide_button.setIconSize(QSize(40, 40))
         self.password_hide_button.setStyleSheet("""
@@ -209,7 +225,18 @@ class signin_window(QWidget):
 
                                                 """)
         self.password_hide_button.setCursor(Qt.PointingHandCursor)
-        self.password_hide_button.clicked.connect(self.hide_password_func)
+        self.password_hide_button.clicked.connect(lambda: self.hide_password_func(True))
+
+        self.priv_pass_hide_button.setFixedSize(50, 30)
+        self.priv_pass_hide_button.setIconSize(QSize(40, 40))
+        self.priv_pass_hide_button.setStyleSheet("""
+        
+                                                    background-color: transparent;
+                                                    border: none;
+
+                                                """)
+        self.priv_pass_hide_button.setCursor(Qt.PointingHandCursor)
+        self.priv_pass_hide_button.clicked.connect(lambda: self.hide_password_func(public = False))
 
         self.username_exists_warning.setStyleSheet(self.warning_text_css)
         self.username_exists_warning.setVisible(False)
@@ -222,10 +249,16 @@ class signin_window(QWidget):
         button_layout.addWidget(self.login_link)
         button_layout.setAlignment(Qt.AlignCenter)
 
-        # Hide password button functionality
+        # Password layout
         password_layout = QHBoxLayout()
         password_layout.addWidget(self.password_input_box)
         password_layout.addWidget(self.password_hide_button)
+
+        # Private password layout
+        priv_pass_layout = QHBoxLayout()
+        priv_pass_layout.addWidget(self.priv_pass_input_box)
+        priv_pass_layout.addWidget(self.priv_pass_hide_button)
+
         
         # layout configuration
         layout.addWidget(self.welcome_text)
@@ -234,6 +267,8 @@ class signin_window(QWidget):
         layout.addWidget(self.username_exists_warning)
         layout.addWidget(self.username_warning)
         layout.addLayout(password_layout)
+        layout.addLayout(priv_pass_layout)
+        layout.addWidget(self.same_password_warning)
         layout.addWidget(self.password_warning)
         layout.addWidget(self.characters_warning)
         layout.addWidget(self.signin_button)
@@ -256,14 +291,21 @@ class signin_window(QWidget):
         self.close()
 
 
-    def hide_password_func(self):
+    def hide_password_func(self, public = True):
         """
         Function to hide or show the password in the password input box when the user clicks on the eye button.
         """
-        self.hidden_password = not self.hidden_password  # Toggle the hidden password state
+        if public:
+            self.hidden_password = not self.hidden_password  # Toggle the hidden password state
 
-        if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
-        else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
+            if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
+            else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
+
+        else:
+            self.hidden_priv_pass = not self.hidden_priv_pass  # Toggle the hidden password state
+
+            if self.hidden_priv_pass: self.priv_pass_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.priv_pass_input_box.setEchoMode(QLineEdit.Password)
+            else: self.priv_pass_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.priv_pass_input_box.setEchoMode(QLineEdit.Normal)
 
 
     def signin_clicked_func(self):
@@ -273,9 +315,10 @@ class signin_window(QWidget):
         # Reads the username and password input from the input boxes
         self.username_input = self.username_input_box.text().strip()
         self.password_input = self.password_input_box.text().strip()
+        self.priv_pass_input = self.priv_input_box.text().strip()
 
-        account = functions.Account(username=self.username_input, password=self.password_input)
-        self.verified_account, self.public_cryptography = account.sign_in()
+        account = functions.Account(username = self.username_input, password = self.password_input, priv_pass = self.priv_pass_input)
+        self.verified_account, self.public_cryptography, self.private_cryptography = account.sign_in()
 
         if not self.verified_account:
             self.username_exists_warning.setVisible(True)
@@ -296,7 +339,10 @@ class signin_window(QWidget):
         public_notes_directory.mkdir(parents=True, exist_ok=True)
 
         # Open menu window
-        self.open_menu_window()
+        from GUI.menu_interface import menu_window
+        win_menu = menu_window(self.username_input, self.public_cryptography, self.private_cryptography)
+        win_menu.show()
+        self.close()
 
 
     def changed_text_input(self, text, type_changed):
@@ -306,15 +352,15 @@ class signin_window(QWidget):
         Return a different style depending on the state of the password input box. 
         """
         
+        def contains_special_characters(text):
+            # Return True if there is a special character in the string, else None
+            special_characters_pattern = r"[^\w\s]" # Ignores any character that is not of type \w(alphabetic characters and underscores) and \s(whitespaces)
+            return bool(re.search(special_characters_pattern, text)) # searches in the string, and converts the return into a boolean
+
+
         if type_changed == "password":
 
             self.password_input = text
-
-        
-            def contains_special_characters(text):
-                # Return True if there is a special character in the string, else None
-                special_characters_pattern = r"[^\w\s]" # Ignores any character that is not of type \w(alphabetic characters and underscores) and \s(whitespaces)
-                return bool(re.search(special_characters_pattern, text)) # searches in the string, and converts the return into a boolean
 
 
             if not text:
@@ -351,6 +397,47 @@ class signin_window(QWidget):
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(False)
 
+
+        elif type_changed == "priv_pass":
+
+            self.password_input = text
+
+
+            if not text:
+                self.priv_pass_input_box.setStyleSheet(self.username_password_css)
+                self.signin_button.setEnabled(False)
+                self.valid_priv_pass = False
+                self.password_warning.setVisible(False)
+                self.characters_warning.setVisible(False)
+
+            elif len(text)<8:
+                self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+                self.signin_button.setEnabled(False)
+                self.valid_priv_pass = False
+                self.password_warning.setVisible(True)
+                self.characters_warning.setVisible(False)
+
+            elif text.isupper() or text.islower():
+                self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+                self.signin_button.setEnabled(False)
+                self.valid_priv_pass = False
+                self.password_warning.setVisible(True)
+                self.characters_warning.setVisible(False)
+
+            elif not contains_special_characters(text):
+                self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+                self.signin_button.setEnabled(False)
+                self.valid_priv_pass = False
+                self.password_warning.setVisible(False)
+                self.characters_warning.setVisible(True)
+
+            else:
+                self.priv_pass_input_box.setStyleSheet(self.cansign_style_css)
+                self.valid_priv_pass = True
+                self.password_warning.setVisible(False)
+                self.characters_warning.setVisible(False)
+
+
         elif type_changed == "username":
             
             self.username_input = text
@@ -373,14 +460,20 @@ class signin_window(QWidget):
                 self.valid_username = True
                 self.username_warning.setVisible(False)
 
-        if self.valid_password and self.valid_username:
-            self.signin_button.setEnabled(True)
 
-    def open_menu_window(self):
-        """
-        Function to open the menu window when all the directories are ready.
-        """
-        from GUI.menu_interface import menu_window
-        win_menu = menu_window(self.username_input, self.public_cryptography, self.private_cryptography)
-        win_menu.show()
-        self.close()
+        pass_input = self.password_input_box.text().strip()
+        priv_pass_input = self.priv_pass_input_box.text().strip()
+
+        if pass_input == priv_pass_input:
+            self.same_password_warning.setVisible(True)
+            self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+
+        
+        else: 
+            self.same_password_warning.setVisible(False)
+
+            if self.valid_priv_pass:
+                self.priv_pass_input_box.setStyleSheet(self.cansign_style_css)
+
+            if self.valid_password and self.valid_username and self.valid_priv_pass:
+                self.signin_button.setEnabled(True)
