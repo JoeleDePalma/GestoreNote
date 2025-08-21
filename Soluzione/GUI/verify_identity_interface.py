@@ -3,11 +3,11 @@
 from pathlib import Path
 import importlib.util
 
-# functions_path = Path(__file__).parent.parent / "functions.py"
+functions_path = Path(__file__).parent.parent / "functions.py"
 
-# spec = importlib.util.spec_from_file_location("functions", str(functions_path))
-# functions = importlib.util.module_from_spec(spec)
-# spec.loader.exec_module(functions)
+spec = importlib.util.spec_from_file_location("functions", str(functions_path))
+functions = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(functions)
 
 
 from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
@@ -16,12 +16,16 @@ from PySide6.QtGui import QIcon
 
 images_path = Path(__file__).parent / "Images"
 
-class verify_identity__window(QWidget):
+class verify_identity_window(QWidget):
 
-    def __init__(self):
+    def __init__(self, username, public_cryptography, private_cryptography):
         super().__init__()
 
         # Variables initialization
+
+        self.username = username
+        self.public_cryptography = public_cryptography
+        self.private_cryptography = private_cryptography
 
         self.valid_username = False
         self.valid_password = False
@@ -45,7 +49,7 @@ class verify_identity__window(QWidget):
 
         self.login_text = QLabel("Verifica il tuo account")
 
-        self.warning_text = QLabel("Nome utente o password non validi")
+        self.warning_text = QLabel("Password per file privati non valida o non trovata")
 
         self.warning_attempts = QLabel("Troppi tentativi falliti, riprova pi\u00f9 tardi")
 
@@ -208,15 +212,20 @@ class verify_identity__window(QWidget):
 
         self.password_input_box.clear()
 
-        if self.attempts < 3:
+        
+        if self.attempts <= 3:
+
+            account = functions.Account(username = self.username, priv_pass = self.password_input)
+            self.verified_account, self.private_cryptography = account.verify_priv_user()
+
             # self.verified_account = functions.verify_privates()
-            if self.verified_account is True:
+            if self.verified_account:
                 from GUI.menu_interface import menu_window
-                menu_win = menu_window()
+                menu_win = menu_window(username = self.username, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography, account_verified = self.verified_account)
                 menu_win.show()
                 self.close()
 
-            else: self.warning_text.setVisible(True)
+            else: self.warning_text.setVisible(True); self.password_input_box.setStyleSheet(self.warning_style_css)
 
         else:
             self.warning_text.setVisible(False)
@@ -231,13 +240,7 @@ class verify_identity__window(QWidget):
         
         input_password = self.password_input_box.text().strip()
 
-        if self.attempts < 3:
+        if self.attempts <= 3:
             if input_password: self.login_button.setEnabled(True) 
             else: self.login_button.setEnabled(False)
         
-
-
-app = QApplication([])
-window = verify_identity__window()
-window.show()
-app.exec()

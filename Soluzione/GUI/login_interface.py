@@ -290,7 +290,8 @@ class login_window(QWidget):
         """
         Function that checks if the username and password input boxes are filled
         """
-        
+       
+
         input_username = self.username_input_box.text().strip()
         input_password = self.password_input_box.text().strip()
 

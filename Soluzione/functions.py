@@ -5,7 +5,6 @@ from pathlib import Path
 import os
 import sqlite3
 import logging
-from types import NoneType
 from argon2 import PasswordHasher, exceptions
 from argon2.low_level import Type, hash_secret_raw
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -128,6 +127,7 @@ class Cryptography():
         self.aesgcm = AESGCM(self.key)
         self.temp_pass = None  # Removes the plain password for security
 
+
     def derive_key(self, password: str, salt: bytes) -> bytes:
         """
         Derives an AES-GCM key from a password and a salt.
@@ -153,6 +153,7 @@ class Cryptography():
         with open(directory, "wb") as file:
             file.write(nonce + ciphertext)
 
+
     def decrypt(self, directory: bytes) -> str:
         """
         Decrypts data encrypted using AES-GCM.
@@ -174,7 +175,7 @@ class Cryptography():
 
         except Exception as e:
             logging.error(f"Decryption failed for file {directory}: {str(e)}")
-            return "ERROR: Unable to decrypt the file."
+            return "Si \xE8 verificato un errore nella decrittazione dei dati"
 
 
 
@@ -191,60 +192,31 @@ class Account:
         """
         Creates a new account and saves the credentials.
         """
-        logging.info(f"Account created: {self.username}")
+        logging.info(f"Creating account for user: {self.username}")
         credentials = {
             "username": self.username,
             "password": self.password,
             "priv_pass": self.priv_pass
         }
 
-        
         try:
             cursor.execute("SELECT username FROM users WHERE username = ?", (credentials["username"],))
             existing_user = cursor.fetchone()
             if existing_user:
-                raise UsernameAlreadyExists 
+                raise UsernameAlreadyExists
 
-
-        
             cursor.execute("""
-        
-                            INSERT INTO users(username, publ_pass, priv_pass) VALUES (?, ?)""", 
-                            (credentials["username"], credentials["password"], credentials["priv_pass"])
-                        
-                            )
+                            INSERT INTO users(username, publ_pass, priv_pass) VALUES (?, ?, ?)""",
+                           (credentials["username"], credentials["password"], credentials["priv_pass"]))
 
             conn.commit()
-
-            directory_all = Path(__file__).parent / self.username
-            directory_all.mkdir(exist_ok=True)
-
-            directory_logs = directory_all / "logs"  
-            directory_logs.mkdir(exist_ok=True)
-
-            directory_all_notes = directory_all / "notes"
-            directory_public_notes = directory_all_notes / "public"
-            directory_private_notes = directory_all_notes / "private"
-
-            directory_all_notes.mkdir(exist_ok=True)
-            directory_public_notes.mkdir(exist_ok=True)
-            directory_private_notes.mkdir(exist_ok=True)
-
-            # Logging configuration
-            logging.basicConfig(
-                level=logging.DEBUG,
-                format='%(asctime)s - %(levelname)s - %(message)s',
-                filename=str(directory_logs / "file_logs.txt"),
-                filemode="a"
-            )
-
-            logging.info(f"Credentials saved for user: {self.username}")
+            logging.info(f"Account created successfully for user: {self.username}")
             return True
 
-    
         except UsernameAlreadyExists:
             logging.error(f"Username '{self.username}' already exists.")
             return False
+
 
 
     def sign_in(self):
@@ -258,12 +230,14 @@ class Account:
         verified_account = self.create_account()
 
         if not verified_account:
+            logging.info(f"Account creation failed for user: {self.username}")
             return verified_account, None, None
 
         logging.info(f"Account registered: {self.username}")
         public_cryptography = Cryptography(password_temp, self.username)
         private_cryptography = Cryptography(priv_pass_temp, self.username)
         password_temp = None
+        priv_pass_temp = None
         return verified_account, public_cryptography, private_cryptography
         
 
@@ -301,12 +275,18 @@ class Account:
         Verify the real identity of the user through the password for private notes.
         """
         
-        conn.execute("SELECT priv_pass FROM users WHERE username = ?", (self.username,))
-        priv_pass = cursor.fetchone[0]
-        temp_pass = self.password
+        cursor.execute("SELECT priv_pass FROM users WHERE username = ?", (self.username,))
+        result = cursor.fetchone()
+
+        if result is None:
+            logging.error(f"User '{self.username}' not found or private password not set.")
+            return False, None
+
+        private_password = result[0]
+        temp_pass = self.priv_pass
 
         try:
-            pass_hash.verify(priv_pass, self.password)
+            pass_hash.verify(private_password, self.priv_pass)
             private_cryptography = Cryptography(temp_pass, self.username)
             return True, private_cryptography
 

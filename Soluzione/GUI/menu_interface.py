@@ -30,8 +30,9 @@ class menu_window(QWidget):
         self.private_cryptography = private_cryptography
         self.account_verified = account_verified
 
-        self.notes_opened = None
         self.note = None
+        self.notes_opened = None
+        self.notes_opened_state = None
 
         self.setWindowTitle("Menu")
         self.setFixedSize(1000, 600)
@@ -197,10 +198,10 @@ class menu_window(QWidget):
         
 
         if self.account_verified:
-            self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "verified_icon.png")), " Verifica")
-         
+            self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "verified_icon.png")), " Verificato")
+
         else: 
-            self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "not_verified_icon.png")), " Verificato")
+            self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "not_verified_icon.png")), " Verifica")
 
         self.tools_settings_list.append(self.toolbar_settings_verify)
 
@@ -249,8 +250,12 @@ class menu_window(QWidget):
 
         self.toolbar_notes_delete.clicked.connect(self.delete_note)
 
+        self.toolbar_settings_verify.clicked.connect(lambda: self.verify_identity)
+
         self.notes_text_box.setFixedSize(550, 550)
         self.notes_text_box.setStyleSheet(self.notes_box_style.format(**self.notes_box_style_day))
+
+        self.toolbar_settings_verify.clicked.connect(self.verify_identity)
 
         # IMPORTANT: Tools styles are in "toolbar layout" section
         
@@ -364,10 +369,31 @@ class menu_window(QWidget):
             if widget is not None:
                 widget.deleteLater() 
 
-        def visibility(buttons_list):
-            is_visible = buttons_list[0].isVisible() if buttons_list else False
-            for button in buttons_list:
-                button.setVisible(not is_visible)
+        self.notes_buttons[0].clear()
+        self.notes_buttons[1].clear()
+
+        def visibility(buttons_list, public = True):
+
+            def show_hide():
+                nonlocal buttons_list
+                is_visible = buttons_list[0].isVisible() if buttons_list else False
+                for button in buttons_list:
+                    button.setVisible(not is_visible)
+            
+            if public: show_hide()
+
+            else:
+                if self.account_verified: show_hide()
+                
+                else: 
+                    self.notes_text_box.clear(); 
+                    self.notes_text_box.setPlaceholderText(
+'''Account non verificato. Impossibile aprire le note private.
+Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''')
+                    self.note = None
+                    self.notes_opened = None
+                    self.notes_opened_state = None
+            
 
         for i, notes in enumerate(self.sep_notes_list): 
             if i == 0:
@@ -398,7 +424,7 @@ class menu_window(QWidget):
                 self.private_notes_button.setFixedSize(160, 30)
                 self.private_notes_button.setVisible(visible)
                 self.private_notes_button.setStyleSheet(self.notes_style.format(**style))
-                self.private_notes_button.clicked.connect(lambda: visibility(self.notes_buttons[1]))
+                self.private_notes_button.clicked.connect(lambda: visibility(self.notes_buttons[1], False))
                 self.notes_layout.addWidget(self.private_notes_button)
                 style["margin"] = "0px"
                 for j in notes:
@@ -443,18 +469,34 @@ class menu_window(QWidget):
 
     def create_notes_func(self):
         from GUI.create_notes_interface import create_notes_window
-        win_create = create_notes_window(self.username, self.public_cryptography, self.private_cryptography)
+        win_create = create_notes_window(username = self.username, private_cryptography = self.private_cryptography, public_cryptography = self.public_cryptography, account_verified = self.account_verified)
         win_create.show()
-        self.close()
+        self.close() 
 
+    
     def rename_notes_func(self):
-        if self.notes_opened:
-            from GUI.rename_notes_interface import rename_notes_window
-            rename_win = rename_notes_window(username = self.username, private_cryptography = self.private_cryptography, public_cryptography = self.public_cryptography, title = self.notes_opened)
-            rename_win.show()
-            self.close()
+        """
+        Opens the rename notes interface if a note is opened.
+        """
+        if self.note:
+            try:
+                from GUI.rename_notes_interface import rename_notes_window
+                # Salva l'istanza della finestra di rinomina come attributo della classe
+                self.rename_win = rename_notes_window(
+                    username=self.username,
+                    private_cryptography=self.private_cryptography,
+                    public_cryptography=self.public_cryptography,
+                    account_verified=self.account_verified,
+                    title=self.notes_opened,
+                    state=self.notes_opened_state
+                )
+                self.rename_win.show()
+                self.close()  # Chiudi la finestra principale solo dopo aver aperto la finestra di rinomina
+            except Exception as e:
+                self.notes_text_box.setPlaceholderText(f"Errore durante l'apertura della finestra di rinomina: {str(e)}")
+        else:
+            self.notes_text_box.setPlaceholderText("Nessuna nota aperta per la rinomina.")
 
-        self.notes_text_box.setPlaceholderText("Nessuna nota aperta per la rinomina.")
 
     def night_mode(self):
         self.night_mode_on = not self.night_mode_on
@@ -535,7 +577,9 @@ class menu_window(QWidget):
         """
 
         self.note = functions.FileNotes(Path(__file__).parent.parent / self.username / "notes" / state / note_name)
-        
+        self.notes_opened = note_name
+        self.notes_opened_state = state
+
         if state == "public": 
             text = self.note.open_note(self.public_cryptography)
 
@@ -577,10 +621,11 @@ class menu_window(QWidget):
                 self.notes_text_box.clear()
                 self.notes_text_box.setPlaceholderText("Nota eliminata con successo.")
                 self.note = None
-                self.set_notes(self.buttons_style_day if not self.night_mode_on else self.buttons_style_night, visible=True)
+                self.set_notes(self.buttons_style_day if not self.night_mode_on else self.buttons_style_night, visible = True)
             
-        else: self.notes_text_box.setPlaceholderText("Errore durante l'eliminazione della nota.")
+            else: self.notes_text_box.setPlaceholderText("Errore durante l'eliminazione della nota.")
 
+        else: self.notes_text_box.setPlaceholderText("Nessuna nota aperta per l'eliminazione.")
 
     def exit(self):
         """
@@ -600,6 +645,7 @@ class menu_window(QWidget):
         for i in self.tools_settings_list:
             i.setVisible(not is_visible)
 
+
     def tools_notes_show(self):
         """
         Shows/hides the tools for notes management.
@@ -608,6 +654,7 @@ class menu_window(QWidget):
         for i in self.tools_notes_list:
             i.setVisible(not is_visible)
 
+
     def close_app(self):
         """
         Close the application and the database connection.
@@ -615,3 +662,19 @@ class menu_window(QWidget):
         self.close()
         cursor.close()
         conn.close()
+
+        
+    def verify_identity(self):
+        """
+        Opens the verify identity interface.
+        """
+
+        if not self.account_verified:
+            from GUI.verify_identity_interface import verify_identity_window
+            self.win_verify = verify_identity_window(username=self.username, private_cryptography=self.private_cryptography, public_cryptography = self.public_cryptography)
+            self.win_verify.show()
+            self.close()
+            
+        else:
+            self.notes_text_box.setPlaceholderText(
+                "Account già verificato. Non è possibile verificare nuovamente l'identità.")

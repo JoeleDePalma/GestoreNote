@@ -315,7 +315,7 @@ class signin_window(QWidget):
         # Reads the username and password input from the input boxes
         self.username_input = self.username_input_box.text().strip()
         self.password_input = self.password_input_box.text().strip()
-        self.priv_pass_input = self.priv_input_box.text().strip()
+        self.priv_pass_input = self.priv_pass_input_box.text().strip()
 
         account = functions.Account(username = self.username_input, password = self.password_input, priv_pass = self.priv_pass_input)
         self.verified_account, self.public_cryptography, self.private_cryptography = account.sign_in()
@@ -340,7 +340,7 @@ class signin_window(QWidget):
 
         # Open menu window
         from GUI.menu_interface import menu_window
-        win_menu = menu_window(self.username_input, self.public_cryptography, self.private_cryptography)
+        win_menu = menu_window(username = self.username_input, public_cryptography= self.public_cryptography, private_cryptography= self.private_cryptography, account_verified = self.verified_account)
         win_menu.show()
         self.close()
 
@@ -464,7 +464,7 @@ class signin_window(QWidget):
         pass_input = self.password_input_box.text().strip()
         priv_pass_input = self.priv_pass_input_box.text().strip()
 
-        if pass_input == priv_pass_input:
+        if pass_input == priv_pass_input and pass_input:
             self.same_password_warning.setVisible(True)
             self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
 

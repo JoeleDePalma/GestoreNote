@@ -123,7 +123,7 @@ class rename_notes_window(QWidget):
                             
                                                 """)
         self.note_title_input_box.setFixedSize(350, 40)
-        self.note_title_input_box.setText(title)
+        self.note_title_input_box.setText(title[:-4])
 
         self.rename_button.setFixedSize(350, 45)
         self.rename_button.setStyleSheet(self.rename_style)
@@ -162,7 +162,7 @@ class rename_notes_window(QWidget):
 
     def rename_func(self):
         new_title = self.note_title_input_box.text().strip()
-        os.rename(self.notes_dir / self.title, self.notes_dir / new_title)
+        os.rename(self.notes_dir / self.title, self.notes_dir / f"{new_title}.txt")
         from GUI.menu_interface import menu_window
         menu_win = menu_window(username = self.username, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography, account_verified = self.account_verified)
         menu_win.show()
@@ -174,11 +174,4 @@ class rename_notes_window(QWidget):
         menu_win = menu_window(username = self.username, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography, account_verified = self.account_verified)
         menu_win.show()
         self.close()
-
-app = QApplication([])
-window = rename_notes_window("username", "public_cryptography", "private_cryptography", "title", "private")
-window.show()
-app.exec()
-
-
         
