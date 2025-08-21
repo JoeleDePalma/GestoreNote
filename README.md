@@ -1,7 +1,7 @@
 ﻿# 🗂️ Gestore Note - Gestione Appunti Privati e Pubblici in Python
 
 Benvenuto in **Appunti Sicuri**, un'applicazione Python per la gestione di appunti personali con protezione avanzata.  
-Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e proteggi l'accesso con password hashate tramite Argon2.
+Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e proteggi l'accesso con password hashate tramite Argon2id.
 
 ---
 
@@ -9,7 +9,7 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 
 - 🔐 **Protezione con password**: accesso agli appunti privati solo dopo verifica.
 - 🔐 **Password hashate e file crittografati** Nessuno potrà accedere alle vostre informazioni private, neanche dal vostro computer.
-- 📁 **Gestione file**: crea, elimina e modifica appunti direttamente dal terminale.
+- 📁 **Gestione file**: crea, elimina e modifica appunti direttamente dall'interfaccia grafica.
 - 🧠 **Struttura modulare**: classi dedicate per file, credenziali e account.
 - 📝 **Logging automatico**: tutte le operazioni vengono registrate.
 - ❌ **Tentativi limitati**: accesso bloccato dopo troppi errori.
@@ -19,15 +19,14 @@ Organizza i tuoi file in modo sicuro, scegli tra appunti pubblici e privati, e p
 ## 🛠️ Requisiti
 
 - Python 3.9+
-- OS Windows
 - Moduli richiesti:
   - `cryptography`
   - `argon2-cffi`
-  - `getpass`
-  - `subprocess`
   - `logging`
   - `pathlib`
-  - `json`
+  - `PySide6`
+  - `sqlite3`
+  - `importlib`
 
 Installa le dipendenze con:
     `bash`
@@ -42,7 +41,7 @@ pip install -r requirements.txt
 
 ## ▶️ Avvio
 
-Dopo aver completato tutte le installazioni, puoi avviare il programma eseguendo il file main.py
+Dopo aver completato tutte le installazioni, puoi avviare l'applicazione eseguendo il file main.py
 
 ---
 
@@ -63,11 +62,15 @@ Hai idee o suggerimenti?
 
 Sono aperto a critiche costruttive, miglioramenti e proposte creative!
 
+---
+
 ## Probabili aggiornamenti futuri:
 
 - Integrazione con servizi cloud per backup automatici.
-- Aggiunta di un database mysql per una gestione più robusta degli appunti e degli utenti.
 - Recupero password tramite email o numero di telefono.
-- Miglioramento della struttura modulare del progetto, con ogni file decato ad una classe/compito 
+- Cambio delle password inserendo.
+- Interfaccia più personalizzabile e con memoria delle preferenze utente.
+- Miglioramento della struttura modulare del progetto, con ogni file decato ad una classe/compito.
+
 
 ## disclaimer: non sono un programmatore esperto, ma sto cercando di migliorare le mie competenze.
