@@ -192,6 +192,7 @@ class Account:
         """
         Creates a new account and saves the credentials.
         """
+
         logging.info(f"Creating account for user: {self.username}")
         credentials = {
             "username": self.username,
@@ -210,6 +211,31 @@ class Account:
                            (credentials["username"], credentials["password"], credentials["priv_pass"]))
 
             conn.commit()
+
+            directory_all = Path(__file__).parent / self.username
+            directory_all.mkdir(exist_ok=True)
+
+            directory_logs = directory_all / "logs"  
+            directory_logs.mkdir(exist_ok=True)
+
+            directory_all_notes = directory_all / "notes"
+            directory_public_notes = directory_all_notes / "public"
+            directory_private_notes = directory_all_notes / "private"
+
+            directory_all_notes.mkdir(exist_ok=True)
+            directory_public_notes.mkdir(exist_ok=True)
+            directory_private_notes.mkdir(exist_ok=True)
+
+            logging.basicConfig(
+                 level=logging.DEBUG,
+                 handlers = [
+                         logging.FileHandler(directory_logs / "file_logs.txt"),
+                         logging.StreamHandler()  # In console too
+                             ],
+                 format='%(asctime)s - %(levelname)s - %(message)s',
+                 force = True
+            )
+
             logging.info(f"Account created successfully for user: {self.username}")
             return True
 

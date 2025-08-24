@@ -18,7 +18,7 @@ images_path = Path(__file__).parent / "Images"
 
 class verify_identity_window(QWidget):
 
-    def __init__(self, username, public_cryptography, private_cryptography):
+    def __init__(self, username, public_cryptography, private_cryptography, night_mode_on):
         super().__init__()
 
         # Variables initialization
@@ -26,6 +26,7 @@ class verify_identity_window(QWidget):
         self.username = username
         self.public_cryptography = public_cryptography
         self.private_cryptography = private_cryptography
+        self.night_mode_on = night_mode_on
 
         self.valid_username = False
         self.valid_password = False
@@ -35,6 +36,7 @@ class verify_identity_window(QWidget):
         # Window initialization
         self.setWindowTitle("Verifica account")
         self.setFixedSize(500, 650)
+        self.setStyleSheet("background-color: #f2f2f2;")
 
 
         # Input camps and texts initialization
@@ -43,7 +45,7 @@ class verify_identity_window(QWidget):
         
         self.password_input_box = QLineEdit()
 
-        self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
+        self.password_hide_button = QPushButton("")
 
         self.login_button = QPushButton("Verifica")
 
@@ -53,16 +55,43 @@ class verify_identity_window(QWidget):
 
         self.warning_attempts = QLabel("Troppi tentativi falliti, riprova pi\u00f9 tardi")
 
+        self.goback_menu = QPushButton("Torna al men\u00f9 principale")
 
         
         # Commons styles
+
+        self.button_style = """
+        
+            QPushButton 
+            {
+                background-color: #007BFF;  
+                color: white;  
+                border: none;  
+                border-radius: 20px; 
+                font-family: Arial;
+                font-size: 16px;
+            }
+
+            QPushButton:hover
+            {
+                background-color: #006FE6;
+            }
+        
+            QPushButton:pressed
+            {
+                background-color: #0062CC;
+            }
+        
+                            """
+
         self.username_password_css = """
             
-                                        background-color: white; 
+                                        background-color: {background_color}; 
                                         font-size: 16px;
                                         font-family: Arial;
-                                        border: 1px solid #ccc;
+                                        border: 1px solid {border_color};
                                         border-radius: 12px;
+                                        color: {text_color};
             
                                     """
 
@@ -94,64 +123,93 @@ class verify_identity_window(QWidget):
                                 
                                 """
 
+        self.tools_style = """
+            
+            QPushButton
+            {{
+                border-radius: 15px;
+                background-color: {normal_background_color};
+                border: 1px solid {normal_border_color};
+                color: {normal_text_color};
+            }}
+
+            QPushButton:hover
+            {{
+                border-radius: 15px;
+                background-color: {hover_background_color};
+                border: 1px solid {hover_border_color};
+                color: {hover_text_color};
+            }}
+
+            QPushButton:pressed
+            {{
+                border-radius: 15px;
+                background-color: {pressed_background_color}; 
+                border: 1px solid {pressed_border_color};
+                color: {pressed_text_color};
+            }}
+
+                        """
+
+
+        self.tools_style_day = dict(
+                     
+            normal_text_color = "black",
+            normal_border_color = "black",
+            normal_background_color = "white",
+
+            hover_text_color = "black",
+            hover_border_color = "black",
+            hover_background_color = "#F7F7F7",
+
+            pressed_text_color = "black",
+            pressed_border_color = "black",
+            pressed_background_color = "#F3F3F3"
+                                                   
+                                            )
+
+        self.tools_style_night = dict(
+                     
+                normal_text_color = "white",
+                normal_border_color = "#5A5A5C",
+                normal_background_color = "#3A3A3C",
+            
+                hover_text_color = "white",
+                hover_border_color = "#5A5A5C",
+                hover_background_color = "#505052",
+
+                pressed_text_color = "white",
+                pressed_border_color = "#5A5A5C",
+                pressed_background_color = "#2C2C2E"
+                                                   
+                                              )
+
+
         # Input camps and text modellation
         
-        self.password_input_box.setPlaceholderText("Password")
+        self.password_input_box.setPlaceholderText("Password per i file privati")
         self.password_input_box.setFixedSize(350, 40)
-        self.password_input_box.setStyleSheet(self.username_password_css)
         self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
         self.password_input_box.textChanged.connect(self.changed_text_input)
         
         self.login_text.setAlignment(Qt.AlignCenter)
-        self.login_text.setStyleSheet("""
-            
-            font-family: 'Merriweather', serif;
-            font-weight: 500;
-            font-style: italic;
-            font-size: 25px;
-            color: black;
-            margin-bottom: 50px;
-        
-        """)
 
         self.login_button.setFixedSize(350, 45)
         self.login_button.setCursor(Qt.PointingHandCursor)
         self.login_button.setEnabled(False)
-        self.login_button.setStyleSheet("""
-        
-            QPushButton 
-            {
-                background-color: #007BFF;  
-                color: white;  
-                border: none;  
-                border-radius: 20px; 
-                font-family: Arial;
-                font-size: 16px;
-            }
-
-            QPushButton:hover
-            {
-                background-color: #006FE6;
-            }
-        
-            QPushButton:pressed
-            {
-                background-color: #0062CC;
-            }
-
-        """)
+        self.login_button.setStyleSheet(self.button_style)
         self.attempts = 0
         self.login_button.clicked.connect(self.verify_clicked_func)
 
-        self.password_hide_button.setFixedSize(50, 30)
-        self.password_hide_button.setIconSize(QSize(40, 40))
+        self.password_hide_button.setFixedSize(40, 25)
+        self.password_hide_button.setIconSize(QSize(30, 30))
+        self.password_hide_button.setCursor(Qt.PointingHandCursor)
         self.password_hide_button.setStyleSheet("""
         
-                                                    background-color: transparent;
-                                                    border: none;
+            background-color: transparent;
+            border: none;
 
                                                 """)
-        self.password_hide_button.setCursor(Qt.PointingHandCursor)
         self.password_hide_button.clicked.connect(self.hide_password_func)
 
         self.warning_text.setVisible(False)
@@ -161,6 +219,72 @@ class verify_identity_window(QWidget):
         self.warning_attempts.setVisible(False)
         self.warning_attempts.setAlignment(Qt.AlignCenter)
         self.warning_attempts.setStyleSheet(self.warning_text_css)
+
+        self.goback_menu.setFixedSize(300, 30)
+        self.goback_menu.setCursor(Qt.PointingHandCursor)
+        self.goback_menu.clicked.connect(self.exit)
+
+        
+        if not self.night_mode_on:
+
+            self.setStyleSheet("background-color: #f2f2f2")
+
+            self.password_input_box.setStyleSheet(self.username_password_css.format(
+                
+                                                       background_color = "white",
+                                                       text_color = "black",
+                                                       border_color = "#ccc"
+            
+                                                                                    ))
+
+            self.login_text.setStyleSheet("""
+            
+            font-family: 'Merriweather', serif;
+            font-weight: 500;
+            font-style: italic;
+            font-size: 25px;
+            color: black;
+            margin-bottom: 50px;
+        
+                                    """)
+
+            self.dir_close_eye = images_path / "eye_close_day.png"
+            self.dir_open_eye = images_path / "eye_open_day.png"
+
+            self.password_hide_button.setIcon(QIcon(str(self.dir_close_eye)))
+
+            self.goback_menu.setStyleSheet(self.tools_style.format(**self.tools_style_day))
+
+
+        else:
+
+            self.setStyleSheet("background-color: #1C1C1E")
+
+            self.password_input_box.setStyleSheet(self.username_password_css.format(
+            
+                                                      background_color = "#3A3A3C",
+                                                      border_color = "#5A5A5C",
+                                                      text_color = "white",
+            
+                                                                                    ))
+
+            self.login_text.setStyleSheet("""
+            
+            font-family: 'Merriweather', serif;
+            font-weight: 500;
+            font-style: italic;
+            font-size: 25px;
+            color: white;
+            margin-bottom: 50px;
+        
+                                    """)
+
+            self.dir_close_eye = images_path / "eye_close_night.png"
+            self.dir_open_eye = images_path / "eye_open_night.png"
+
+            self.password_hide_button.setIcon(QIcon(str(self.dir_close_eye)))
+
+            self.goback_menu.setStyleSheet(self.tools_style.format(**self.tools_style_night))
 
 
         # Layout Initialization
@@ -174,6 +298,12 @@ class verify_identity_window(QWidget):
         password_layout = QHBoxLayout()
         password_layout.addWidget(self.password_input_box)
         password_layout.addWidget(self.password_hide_button)
+
+        # goback menu layout
+
+        self.goback_interface = QHBoxLayout()
+        self.goback_interface.addWidget(self.goback_menu)
+        self.goback_interface.setAlignment(Qt.AlignCenter | Qt.AlignTop)
         
         # layout configuration
         layout.addWidget(self.login_text)
@@ -181,6 +311,7 @@ class verify_identity_window(QWidget):
         layout.addWidget(self.warning_text)
         layout.addWidget(self.warning_attempts)
         layout.addWidget(self.login_button)
+        layout.addLayout(self.goback_interface)
         layout.setAlignment(Qt.AlignCenter)
         layout.addLayout(button_layout) 
         
@@ -197,8 +328,8 @@ class verify_identity_window(QWidget):
         """
         self.hidden_password = not self.hidden_password  # Toggle the hidden password state
 
-        if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
-        else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
+        if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(self.dir_close_eye))); self.password_input_box.setEchoMode(QLineEdit.Password)
+        else: self.password_hide_button.setIcon(QIcon(str(self.dir_open_eye))); self.password_input_box.setEchoMode(QLineEdit.Normal)
 
 
     def verify_clicked_func(self):
@@ -221,7 +352,13 @@ class verify_identity_window(QWidget):
             # self.verified_account = functions.verify_privates()
             if self.verified_account:
                 from GUI.menu_interface import menu_window
-                menu_win = menu_window(username = self.username, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography, account_verified = self.verified_account)
+                menu_win = menu_window(
+                    username = self.username,
+                    public_cryptography = self.public_cryptography,
+                    private_cryptography = self.private_cryptography,
+                    account_verified = self.verified_account,
+                    night_mode_on = self.night_mode_on
+                                    )
                 menu_win.show()
                 self.close()
 
@@ -243,4 +380,21 @@ class verify_identity_window(QWidget):
         if self.attempts <= 3:
             if input_password: self.login_button.setEnabled(True) 
             else: self.login_button.setEnabled(False)
+
+
+    def exit(self):
+        """
+        Function tu return to the main menu if the user clicks on the goback button.
+        """
         
+        from GUI.menu_interface import menu_window
+        win_menu = menu_window(
+            username=self.username,
+            public_cryptography=self.public_cryptography,
+            private_cryptography=self.private_cryptography,
+            account_verified=self.user_verified,
+            night_mode_on=self.night_mode_on
+        )
+
+        win_menu.show()
+        self.close()

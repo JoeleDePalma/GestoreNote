@@ -18,10 +18,12 @@ images_path = Path(__file__).parent / "Images"
 
 class login_window(QWidget):
 
-    def __init__(self):
+    def __init__(self, night_mode_on):
         super().__init__()
 
         # Variables initialization
+        self.night_mode_on = night_mode_on
+
         self.private_cryptography = None
         self.public_cryptography = None
 
@@ -42,7 +44,7 @@ class login_window(QWidget):
         
         self.password_input_box = QLineEdit()
 
-        self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
+        self.password_hide_button = QPushButton("")
 
         self.login_button = QPushButton("Accedi")
 
@@ -57,14 +59,32 @@ class login_window(QWidget):
         
         # Commons styles
         self.username_password_css = """
-            
-                                        background-color: white; 
+                                    QLineEdit
+                                    {{
+                                        background-color: {background_color}; 
                                         font-size: 16px;
                                         font-family: Arial;
-                                        border: 1px solid #ccc;
+                                        border: 1px solid {border_color};
                                         border-radius: 12px;
-            
+                                        color: {text_color};
+                                    }}
                                     """
+
+        self.username_password_day = dict(
+            
+            background_color = "white",
+            border_color = "#ccc",
+            text_color = "black"
+
+            )
+
+        self.username_password_night = dict(
+            
+            background_color = "#3A3A3C",
+            border_color = "#5A5A5C",
+            text_color = "white"
+
+            )
 
         self.warning_style_css = """
             
@@ -96,22 +116,13 @@ class login_window(QWidget):
 
         # Input camps and text modellation
         self.welcomeback_text.setAlignment(Qt.AlignCenter)
-        self.welcomeback_text.setStyleSheet("""
-            
-            font-family: Montserrat;
-            font-size: 30px;
-            font-weight: bold;
-        
-        """)
         
         self.username_input_box.setPlaceholderText("Nome utente")
         self.username_input_box.setFixedSize(350, 40)
-        self.username_input_box.setStyleSheet(self.username_password_css)
         self.username_input_box.textChanged.connect(self.changed_text_input)
         
         self.password_input_box.setPlaceholderText("Password")
         self.password_input_box.setFixedSize(350, 40)
-        self.password_input_box.setStyleSheet(self.username_password_css)
         self.password_input_box.setEchoMode(QLineEdit.Password) # Hides the password input by default
         self.password_input_box.textChanged.connect(self.changed_text_input)
         
@@ -185,8 +196,8 @@ class login_window(QWidget):
         self.attempts = 0
         self.login_button.clicked.connect(self.login_clicked_func)
 
-        self.password_hide_button.setFixedSize(50, 30)
-        self.password_hide_button.setIconSize(QSize(40, 40))
+        self.password_hide_button.setFixedSize(40, 25)
+        self.password_hide_button.setIconSize(QSize(30, 30))
         self.password_hide_button.setStyleSheet("""
         
                                                     background-color: transparent;
@@ -203,6 +214,49 @@ class login_window(QWidget):
         self.warning_attempts.setVisible(False)
         self.warning_attempts.setAlignment(Qt.AlignCenter)
         self.warning_attempts.setStyleSheet(self.warning_text_css)
+
+
+        if not self.night_mode_on:
+
+            self.setStyleSheet("background-color: #f2f2f2;")
+
+            self.welcomeback_text.setStyleSheet("""
+            
+                    color: black;
+                    font-family: Montserrat;
+                    font-size: 30px;
+                    font-weight: bold;
+        
+                                                """)
+
+            self.username_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+            self.password_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+
+            self.dir_eye_open = Path(__file__).parent / "Images" / "eye_open_day.png"
+            self.dir_eye_close = Path(__file__).parent / "Images" / "eye_close_day.png"
+
+            self.password_hide_button.setIcon(QIcon(str(self.dir_eye_close)))
+
+        else:
+
+            self.setStyleSheet("background-color: #1C1C1E;")
+
+            self.welcomeback_text.setStyleSheet("""
+            
+                    color: white;
+                    font-family: Montserrat;
+                    font-size: 30px;
+                    font-weight: bold;
+        
+                                                """)
+
+            self.username_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+            self.password_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+
+            self.dir_eye_open = Path(__file__).parent / "Images" / "eye_open_night.png"
+            self.dir_eye_close = Path(__file__).parent / "Images" / "eye_close_night.png"
+
+            self.password_hide_button.setIcon(QIcon(str(self.dir_eye_close)))
 
 
         # Layout Initialization
@@ -240,7 +294,7 @@ class login_window(QWidget):
         Function to show the signin window when the user clicks on the signin link.
         """
         from GUI.signin_interface import signin_window
-        signin_win = signin_window()
+        signin_win = signin_window(self.night_mode_on)
         signin_win.show()
         self.user_verified = True
         self.close()
@@ -252,8 +306,8 @@ class login_window(QWidget):
         """
         self.hidden_password = not self.hidden_password  # Toggle the hidden password state
 
-        if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
-        else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
+        if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(self.dir_eye_close))); self.password_input_box.setEchoMode(QLineEdit.Password)
+        else: self.password_hide_button.setIcon(QIcon(str(self.dir_eye_open))); self.password_input_box.setEchoMode(QLineEdit.Normal)
 
 
     def login_clicked_func(self):
@@ -274,7 +328,12 @@ class login_window(QWidget):
             self.verified_account, self.public_cryptography = account.verify_user()
             if self.verified_account:
                 from GUI.menu_interface import menu_window
-                menu_win = menu_window(username = self.username_input, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography)
+                menu_win = menu_window(
+                    username = self.username_input, 
+                    public_cryptography = self.public_cryptography, 
+                    private_cryptography = self.private_cryptography, 
+                    night_mode_on = self.night_mode_on
+                                       )
                 menu_win.show()
                 self.close()
 
@@ -290,7 +349,6 @@ class login_window(QWidget):
         """
         Function that checks if the username and password input boxes are filled
         """
-       
 
         input_username = self.username_input_box.text().strip()
         input_password = self.password_input_box.text().strip()

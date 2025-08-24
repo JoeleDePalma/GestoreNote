@@ -22,10 +22,12 @@ images_path = Path(__file__).parent / "Images"
 
 class signin_window(QWidget):
 
-    def __init__(self):
+    def __init__(self, night_mode_on = False):
         super().__init__()
 
         # Variables initialization
+        self.night_mode_on = night_mode_on
+
         self.private_cryptography = None
             
         self.valid_username = False
@@ -37,7 +39,7 @@ class signin_window(QWidget):
         # Window initialization
         self.setWindowTitle("Registrati")
         self.setFixedSize(500, 650)
-
+        
 
         # Input camps and texts initialization
         self.welcome_text = QLabel("Benvenuto!")
@@ -50,9 +52,9 @@ class signin_window(QWidget):
 
         self.priv_pass_input_box = QLineEdit()
 
-        self.password_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
+        self.password_hide_button = QPushButton("")
 
-        self.priv_pass_hide_button = QPushButton(QIcon(str(images_path / "eye_close.png")), "")
+        self.priv_pass_hide_button = QPushButton("")
 
         self.password_warning = QLabel("Le password devono contenere almeno 8 caratteri, maiuscoli e minuscoli")
 
@@ -71,34 +73,72 @@ class signin_window(QWidget):
         
         # Commons styles
         self.username_password_css = """
-            
-                                        background-color: white; 
+                                    QLineEdit
+                                    {{
+                                        background-color: {background_color}; 
                                         font-size: 16px;
                                         font-family: Arial;
-                                        border: 1px solid #ccc;
+                                        border: 1px solid {border_color};
                                         border-radius: 12px;
-            
+                                        color: {text_color};
+                                    }}
                                     """
+
+        self.username_password_day = dict(
+            
+            background_color = "white",
+            border_color = "#ccc",
+            text_color = "black"
+
+            )
+
+        self.username_password_night = dict(
+            
+            background_color = "#3A3A3C",
+            border_color = "#5A5A5C",
+            text_color = "white"
+
+            )
 
         self.warning_style_css = """
             
-                                    background-color: white; 
+                                    QLineEdit
+                                    {{
+                                    background-color: {background_color}; 
                                     font-size: 16px;
                                     font-family: Arial;
                                     border: 1px solid red;
                                     border-radius: 12px;
-            
+                                    }}
+
                                 """
 
         self.cansign_style_css = """
                 
-                                    background-color: white; 
+                                    QLineEdit
+                                    {{
+                                    background-color: {background_color}; 
                                     font-size: 16px;
                                     font-family: Arial;
                                     border: 1px solid green;
                                     border-radius: 12px;
+                                    }}
 
                                 """
+
+        self.input_style_day = dict(
+            
+            background_color = "white",
+            text_color = "black"
+            
+                            )
+
+        self.input_style_night = dict(
+            
+            background_color= "#3A3A3C",
+            text_color = "white"
+            
+                            )
 
         self.warning_text_css = """
                                 
@@ -110,13 +150,6 @@ class signin_window(QWidget):
 
         # Input camps and text modellation
         self.welcome_text.setAlignment(Qt.AlignCenter)
-        self.welcome_text.setStyleSheet("""
-            
-            font-family: Montserrat;
-            font-size: 30px;
-            font-weight: bold;
-        
-        """)
         
         self.username_input_box.setPlaceholderText("Nome utente")
         self.username_input_box.setFixedSize(350, 40)
@@ -167,14 +200,7 @@ class signin_window(QWidget):
         """)
 
         self.signin_text.setAlignment(Qt.AlignCenter)
-        self.signin_text.setStyleSheet("""
-            
-            font-family: Arial;
-            font-size: 15px;
-            color: grey;
-            margin-bottom: 50px;
         
-        """)
 
         self.signin_button.setFixedSize(350, 45)
         self.signin_button.setCursor(Qt.PointingHandCursor)
@@ -216,8 +242,8 @@ class signin_window(QWidget):
         self.same_password_warning.setStyleSheet(self.warning_text_css)
         self.same_password_warning.setVisible(False)
 
-        self.password_hide_button.setFixedSize(50, 30)
-        self.password_hide_button.setIconSize(QSize(40, 40))
+        self.password_hide_button.setFixedSize(40, 25)
+        self.password_hide_button.setIconSize(QSize(30, 30))
         self.password_hide_button.setStyleSheet("""
         
                                                     background-color: transparent;
@@ -227,8 +253,8 @@ class signin_window(QWidget):
         self.password_hide_button.setCursor(Qt.PointingHandCursor)
         self.password_hide_button.clicked.connect(lambda: self.hide_password_func(True))
 
-        self.priv_pass_hide_button.setFixedSize(50, 30)
-        self.priv_pass_hide_button.setIconSize(QSize(40, 40))
+        self.priv_pass_hide_button.setFixedSize(40, 25)
+        self.priv_pass_hide_button.setIconSize(QSize(30, 30))
         self.priv_pass_hide_button.setStyleSheet("""
         
                                                     background-color: transparent;
@@ -240,6 +266,71 @@ class signin_window(QWidget):
 
         self.username_exists_warning.setStyleSheet(self.warning_text_css)
         self.username_exists_warning.setVisible(False)
+
+        
+        if not self.night_mode_on:
+
+            self.setStyleSheet("background-color: #f2f2f2;")
+
+            self.welcome_text.setStyleSheet("""
+            
+                font-family: Montserrat;
+                font-size: 30px;
+                font-weight: bold;
+                color: black;
+        
+                                            """)
+
+            self.signin_text.setStyleSheet("""
+            
+                        font-family: Arial;
+                        font-size: 15px;
+                        color: grey;
+                        margin-bottom: 50px;
+        
+                                            """)
+
+            self.dir_eye_open = images_path / "eye_open_day.png"
+            self.dir_eye_close = images_path / "eye_close_day.png"
+            self.password_hide_button.setIcon(QIcon(str(self.dir_eye_close)))
+            self.priv_pass_hide_button.setIcon(QIcon(str(self.dir_eye_close)))
+
+            self.password_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+            self.priv_pass_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+            self.username_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+
+        else:
+
+            self.setStyleSheet("background-color: #1C1C1E;")
+
+            self.welcome_text.setStyleSheet("""
+            
+                font-family: Montserrat;
+                font-size: 30px;
+                font-weight: bold;
+                color: white;
+        
+                                            """)
+
+            self.signin_text.setStyleSheet("""
+            
+                        font-family: Arial;
+                        font-size: 15px;
+                        color: grey;
+                        margin-bottom: 50px;
+        
+                                            """)
+
+            self.dir_eye_open = images_path / "eye_open_night.png"
+            self.dir_eye_close = images_path / "eye_close_night.png"
+            self.password_hide_button.setIcon(QIcon(str(self.dir_eye_close)))
+            self.priv_pass_hide_button.setIcon(QIcon(str(self.dir_eye_close)))
+
+            self.password_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+            self.priv_pass_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+            self.username_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+
+
 
         # Layout Initialization
         layout = QVBoxLayout()
@@ -286,7 +377,7 @@ class signin_window(QWidget):
         Function to show the login window when the user clicks on the login link.
         """
         from GUI.login_interface import login_window
-        self.login_win = login_window()
+        self.login_win = login_window(self.night_mode_on)
         self.login_win.show()
         self.close()
 
@@ -298,14 +389,14 @@ class signin_window(QWidget):
         if public:
             self.hidden_password = not self.hidden_password  # Toggle the hidden password state
 
-            if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.password_input_box.setEchoMode(QLineEdit.Password)
-            else: self.password_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.password_input_box.setEchoMode(QLineEdit.Normal)
+            if self.hidden_password: self.password_hide_button.setIcon(QIcon(str(self.dir_eye_close))); self.password_input_box.setEchoMode(QLineEdit.Password)
+            else: self.password_hide_button.setIcon(QIcon(str(self.dir_eye_open))); self.password_input_box.setEchoMode(QLineEdit.Normal)
 
         else:
             self.hidden_priv_pass = not self.hidden_priv_pass  # Toggle the hidden password state
 
-            if self.hidden_priv_pass: self.priv_pass_hide_button.setIcon(QIcon(str(images_path / "eye_close.png"))); self.priv_pass_input_box.setEchoMode(QLineEdit.Password)
-            else: self.priv_pass_hide_button.setIcon(QIcon(str(images_path / "eye_open.png"))); self.priv_pass_input_box.setEchoMode(QLineEdit.Normal)
+            if self.hidden_priv_pass: self.priv_pass_hide_button.setIcon(QIcon(str(self.dir_eye_close))); self.priv_pass_input_box.setEchoMode(QLineEdit.Password)
+            else: self.priv_pass_hide_button.setIcon(QIcon(str(self.dir_eye_open))); self.priv_pass_input_box.setEchoMode(QLineEdit.Normal)
 
 
     def signin_clicked_func(self):
@@ -340,7 +431,13 @@ class signin_window(QWidget):
 
         # Open menu window
         from GUI.menu_interface import menu_window
-        win_menu = menu_window(username = self.username_input, public_cryptography= self.public_cryptography, private_cryptography= self.private_cryptography, account_verified = self.verified_account)
+        win_menu = menu_window(
+            username = self.username_input,
+            public_cryptography= self.public_cryptography,
+            private_cryptography= self.private_cryptography,
+            account_verified = self.verified_account,
+            night_mode_on = self.night_mode_on
+                            )
         win_menu.show()
         self.close()
 
@@ -364,35 +461,45 @@ class signin_window(QWidget):
 
 
             if not text:
-                self.password_input_box.setStyleSheet(self.username_password_css)
+                if not self.night_mode_on: self.password_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+                else: self.password_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_password = False
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(False)
 
             elif len(text)<8:
-                self.password_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_password = False
                 self.password_warning.setVisible(True)
                 self.characters_warning.setVisible(False)
 
             elif text.isupper() or text.islower():
-                self.password_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_password = False
                 self.password_warning.setVisible(True)
                 self.characters_warning.setVisible(False)
 
             elif not contains_special_characters(text):
-                self.password_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_password = False
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(True)
 
             else:
-                self.password_input_box.setStyleSheet(self.cansign_style_css)
+                if not self.night_mode_on: self.password_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.password_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_night))
+
                 self.valid_password = True
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(False)
@@ -404,35 +511,45 @@ class signin_window(QWidget):
 
 
             if not text:
-                self.priv_pass_input_box.setStyleSheet(self.username_password_css)
+                if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+                else: self.priv_pass_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_priv_pass = False
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(False)
 
             elif len(text)<8:
-                self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_priv_pass = False
                 self.password_warning.setVisible(True)
                 self.characters_warning.setVisible(False)
 
             elif text.isupper() or text.islower():
-                self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_priv_pass = False
                 self.password_warning.setVisible(True)
                 self.characters_warning.setVisible(False)
 
             elif not contains_special_characters(text):
-                self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_priv_pass = False
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(True)
 
             else:
-                self.priv_pass_input_box.setStyleSheet(self.cansign_style_css)
+                if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_night))
+
                 self.valid_priv_pass = True
                 self.password_warning.setVisible(False)
                 self.characters_warning.setVisible(False)
@@ -444,19 +561,25 @@ class signin_window(QWidget):
             self.username_exists_warning.setVisible(False)
 
             if not text:
-                self.username_input_box.setStyleSheet(self.username_password_css)
+                if not self.night_mode_on: self.username_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_day))
+                else: self.username_input_box.setStyleSheet(self.username_password_css.format(**self.username_password_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_username = False
                 self.username_warning.setVisible(False)
         
             elif len(text)<5:
-                self.username_input_box.setStyleSheet(self.warning_style_css)
+                if not self.night_mode_on: self.username_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.username_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
+
                 self.signin_button.setEnabled(False)
                 self.valid_username = False
                 self.username_warning.setVisible(True)
 
             else:
-                self.username_input_box.setStyleSheet(self.cansign_style_css)
+                if not self.night_mode_on: self.username_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.username_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_night))
+
                 self.valid_username = True
                 self.username_warning.setVisible(False)
 
@@ -466,14 +589,18 @@ class signin_window(QWidget):
 
         if pass_input == priv_pass_input and pass_input:
             self.same_password_warning.setVisible(True)
-            self.priv_pass_input_box.setStyleSheet(self.warning_style_css)
+
+            if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+            if self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
 
         
         else: 
             self.same_password_warning.setVisible(False)
 
             if self.valid_priv_pass:
-                self.priv_pass_input_box.setStyleSheet(self.cansign_style_css)
+
+                if not self.night_mode_on: self.username_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.username_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_night))
 
             if self.valid_password and self.valid_username and self.valid_priv_pass:
                 self.signin_button.setEnabled(True)

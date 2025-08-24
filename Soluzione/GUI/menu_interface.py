@@ -23,12 +23,13 @@ images_path = Path(__file__).parent / "images"
 
 class menu_window(QWidget):
     
-    def __init__(self, username, public_cryptography, private_cryptography, account_verified = False):
+    def __init__(self, username, public_cryptography, private_cryptography, night_mode_on, account_verified = False):
         super().__init__()
         self.username = username
         self.public_cryptography = public_cryptography
         self.private_cryptography = private_cryptography
         self.account_verified = account_verified
+        self.night_mode_on = night_mode_on
 
         self.note = None
         self.notes_opened = None
@@ -36,13 +37,13 @@ class menu_window(QWidget):
 
         self.setWindowTitle("Menu")
         self.setFixedSize(1000, 600)
+        self.setStyleSheet("background-color: #f2f2f2;")
         
         # Initialization variables
 
         self.toolbar_list = []
         self.tools_notes_list = []
         self.tools_settings_list = []
-        self.night_mode_on = False
 
         # Commons styles
 
@@ -215,7 +216,7 @@ class menu_window(QWidget):
 
         # Input camps and text modellation
 
-        self.toolbar_nightmode_button.clicked.connect(self.night_mode)
+        self.toolbar_nightmode_button.clicked.connect(lambda: self.night_mode(to_change = True))
 
         self.toolbar_settings_button.clicked.connect(self.tools_settings_show)
 
@@ -316,6 +317,9 @@ class menu_window(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.addLayout(self.main_layout)
         self.setLayout(self.layout)
+
+        # checks if night mode is on and sets the right styles
+        self.night_mode(to_change = False)
 
 
     def toolbar_appear(self):
@@ -469,7 +473,13 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
 
     def create_notes_func(self):
         from GUI.create_notes_interface import create_notes_window
-        win_create = create_notes_window(username = self.username, private_cryptography = self.private_cryptography, public_cryptography = self.public_cryptography, account_verified = self.account_verified)
+        win_create = create_notes_window(
+            username = self.username, 
+            private_cryptography = self.private_cryptography, 
+            public_cryptography = self.public_cryptography, 
+            account_verified = self.account_verified,
+            night_mode_on=self.night_mode_on
+            )
         win_create.show()
         self.close() 
 
@@ -488,7 +498,8 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
                     public_cryptography=self.public_cryptography,
                     account_verified=self.account_verified,
                     title=self.notes_opened,
-                    state=self.notes_opened_state
+                    state=self.notes_opened_state,
+                    night_mode_on=self.night_mode_on
                 )
                 self.rename_win.show()
                 self.close()  # Chiudi la finestra principale solo dopo aver aperto la finestra di rinomina
@@ -498,8 +509,9 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
             self.notes_text_box.setPlaceholderText("Nessuna nota aperta per la rinomina.")
 
 
-    def night_mode(self):
-        self.night_mode_on = not self.night_mode_on
+    def night_mode(self, to_change):
+
+        if to_change: self.night_mode_on = not self.night_mode_on
         
         if self.night_mode_on:
 
@@ -566,7 +578,7 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
 
             self.profile_button.setStyleSheet(self.tools_style.format(**self.buttons_style_day))   
             
-            self.setStyleSheet("background-color: white")
+            self.setStyleSheet("background-color: #f2f2f2")
 
             self.notes_text_box.setStyleSheet(self.notes_box_style.format(**style_notes))
     
@@ -627,12 +639,13 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
 
         else: self.notes_text_box.setPlaceholderText("Nessuna nota aperta per l'eliminazione.")
 
+
     def exit(self):
         """
         Go back to the sign-in interface.
         """
         from GUI.signin_interface import signin_window
-        win_signin = signin_window()
+        win_signin = signin_window(self.night_mode_on)
         win_signin.show()
         self.close()
 
@@ -671,7 +684,12 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
 
         if not self.account_verified:
             from GUI.verify_identity_interface import verify_identity_window
-            self.win_verify = verify_identity_window(username=self.username, private_cryptography=self.private_cryptography, public_cryptography = self.public_cryptography)
+            self.win_verify = verify_identity_window(
+                username=self.username,
+                private_cryptography=self.private_cryptography, 
+                public_cryptography = self.public_cryptography,
+                night_mode_on = self.night_mode_on
+                )
             self.win_verify.show()
             self.close()
             

@@ -14,7 +14,8 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 
 class rename_notes_window(QWidget):
-    def __init__(self, username, public_cryptography, private_cryptography, account_verified, title, state):
+
+    def __init__(self, username, public_cryptography, private_cryptography, account_verified, title, state, night_mode_on):
         super().__init__()
         self.username = username
         self.public_cryptography = public_cryptography
@@ -22,6 +23,7 @@ class rename_notes_window(QWidget):
         self.account_verified = account_verified
         self.state = state
         self.title = title
+        self.night_mode_on = night_mode_on
 
         self.notes_dir = Path(__file__).parent.parent / self.username / "notes" / self.state 
         self.images_dir = Path(__file__).parent / "images" 
@@ -29,6 +31,8 @@ class rename_notes_window(QWidget):
         # Window initialization
         self.setWindowTitle("Rinomina note")
         self.setFixedSize(400, 250)
+        self.setStyleSheet("background-color: #f2f2f2;")
+
 
         # Input camps and texts initialization
         self.goback_menu = QPushButton(QIcon(str(self.images_dir / "goback_icon.png")), "Indietro")
@@ -92,6 +96,7 @@ class rename_notes_window(QWidget):
 
                         """
 
+
         self.tools_style_day = dict(
                      
             normal_text_color = "black",
@@ -107,31 +112,64 @@ class rename_notes_window(QWidget):
             pressed_background_color = "#F3F3F3"
                                                    
                                             )
-        
+
+        self.tools_style_night = dict(
+                     
+                normal_text_color = "white",
+                normal_border_color = "#5A5A5C",
+                normal_background_color = "#3A3A3C",
+            
+                hover_text_color = "white",
+                hover_border_color = "#5A5A5C",
+                hover_background_color = "#505052",
+
+                pressed_text_color = "white",
+                pressed_border_color = "#5A5A5C",
+                pressed_background_color = "#2C2C2E"
+                                                   
+                                              )
 
         # Input camps and texts modellation
 
+        self.note_title_input_box.setFixedSize(350, 40)
+        self.note_title_input_box.setText(title[:-4])
 
-        self.note_title_input_box.setStyleSheet("""
+        self.rename_button.setFixedSize(350, 45)
+        self.rename_button.clicked.connect(self.rename_func)
+
+        self.goback_menu.setFixedSize(150, 30)
+        self.goback_menu.clicked.connect(self.goback_menu_func)
+
+        if not self.night_mode_on:
+
+            self.setStyleSheet("background-color: #f2f2f2;")
+            self.goback_menu.setStyleSheet(self.tools_style.format(**self.tools_style_day))
+            self.rename_button.setStyleSheet(self.rename_style)
+            self.note_title_input_box.setStyleSheet("""
         
                             background-color: white; 
                             font-size: 16px;
                             font-family: Arial;
                             border: 1px solid #ccc;
                             border-radius: 10px;
-        
+                            color: black;
                             
                                                 """)
-        self.note_title_input_box.setFixedSize(350, 40)
-        self.note_title_input_box.setText(title[:-4])
+            
+        else:
 
-        self.rename_button.setFixedSize(350, 45)
-        self.rename_button.setStyleSheet(self.rename_style)
-        self.rename_button.clicked.connect(self.rename_func)
-
-        self.goback_menu.setFixedSize(150, 30)
-        self.goback_menu.setStyleSheet(self.tools_style.format(**self.tools_style_day))
-        self.goback_menu.clicked.connect(self.goback_menu_func)
+            self.setStyleSheet("background-color: #1C1C1E")
+            self.goback_menu.setStyleSheet(self.tools_style.format(**self.tools_style_night))
+            self.rename_button.setStyleSheet(self.rename_style)
+            self.note_title_input_box.setStyleSheet("""
+        
+                            color: white;
+                            background-color: #3A3A3C;
+                            border: 1px solid #5A5A5C;
+                            font-size: 16px;
+                            border-radius: 10px;
+                            
+                                                """)
 
 
         # Layout Initialization
@@ -142,6 +180,7 @@ class rename_notes_window(QWidget):
 
         self.tools_layout = QHBoxLayout()
         self.tools_layout.addWidget(self.goback_menu)
+        self.tools_layout.setContentsMargins(0, 10, 0, 0)
         self.tools_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         # Rename layout configuration
@@ -164,14 +203,26 @@ class rename_notes_window(QWidget):
         new_title = self.note_title_input_box.text().strip()
         os.rename(self.notes_dir / self.title, self.notes_dir / f"{new_title}.txt")
         from GUI.menu_interface import menu_window
-        menu_win = menu_window(username = self.username, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography, account_verified = self.account_verified)
+        menu_win = menu_window(
+           username = self.username,
+           public_cryptography = self.public_cryptography, 
+           private_cryptography = self.private_cryptography, 
+           account_verified = self.account_verified,
+           night_mode_on=self.night_mode_on
+           )
         menu_win.show()
         self.close()
 
 
     def goback_menu_func(self):
         from GUI.menu_interface import menu_window
-        menu_win = menu_window(username = self.username, public_cryptography = self.public_cryptography, private_cryptography = self.private_cryptography, account_verified = self.account_verified)
+        menu_win = menu_window(
+          username = self.username,
+          public_cryptography = self.public_cryptography,
+          private_cryptography = self.private_cryptography,
+          account_verified = self.account_verified,
+          night_mode_on = self.night_mode_on
+          )
         menu_win.show()
         self.close()
         
