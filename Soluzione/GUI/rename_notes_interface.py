@@ -25,7 +25,7 @@ class rename_notes_window(QWidget):
         self.title = title
         self.night_mode_on = night_mode_on
 
-        self.notes_dir = Path(__file__).parent.parent / self.username / "notes" / self.state 
+        self.notes_dir = Path(__file__).parent.parent / "users" /self.username / "notes" / self.state 
         self.images_dir = Path(__file__).parent / "images" 
 
         # Window initialization

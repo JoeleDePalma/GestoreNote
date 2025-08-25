@@ -10,7 +10,9 @@ from argon2.low_level import Type, hash_secret_raw
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import secrets
 
-conn = sqlite3.connect(Path(__file__).parent / "credentials.db")
+dir_db = Path(__file__).parent / "credentials.db"
+
+conn = sqlite3.connect(dir_db)
 cursor = conn.cursor()
 
 cursor.execute("""
@@ -24,6 +26,9 @@ cursor.execute("""
                     priv_salt BLOB)
                     
                 """)
+
+conn.commit()
+conn.close()
 
 # Create password hasher object
 pass_hash = PasswordHasher(
@@ -74,8 +79,13 @@ def create_private(username, priv_pass_input):
     
     private_cryptography = Cryptography(username= username, password=priv_pass_input)
     hashed_password = pass_hash.hash(priv_pass_input)
-    cursor.execute("UPDATE users SET priv_pass = ? WHERE username = ?", (hashed_password, username))
-    conn.commit()
+
+    dir_db = Path(__file__).parent / "credentials.db"
+    with sqlite3.connect(dir_db) as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET priv_pass = ? WHERE username = ?", (hashed_password, username))
+        conn.commit()
+
     return private_cryptography
 
 
@@ -86,35 +96,43 @@ class Cryptography():
     def __init__(self, password: str, username):
         self.temp_pass = password
         self.username = username
+        self.dir_db = Path(__file__).parent / "credentials.db"
         
         def control_salt(salt_name):
             """
             Checks if the salt exists, creates it if not, otherwise retrieves it.
             """
             
-            cursor.execute("SELECT publ_salt, priv_salt FROM users WHERE username = ?", (self.username,))
+            with sqlite3.connect(self.dir_db) as conn:
+
+                cursor = conn.cursor()
+                cursor.execute("SELECT publ_salt, priv_salt FROM users WHERE username = ?", (self.username,))
             
-            salts = cursor.fetchone()
-            publ_salt, priv_salt = salts
+                salts = cursor.fetchone()
+                publ_salt, priv_salt = salts
 
-            if salt_name == "publ_salt" and publ_salt is None:
-                salt = secrets.token_bytes(16)
-                cursor.execute("UPDATE users SET publ_salt = ? WHERE username = ?",(salt, self.username,))
-                conn.commit()
+                if salt_name == "publ_salt" and publ_salt is None:
+                    salt = secrets.token_bytes(16)
+                    cursor.execute("UPDATE users SET publ_salt = ? WHERE username = ?",(salt, self.username,))
+                    conn.commit()
 
-            elif salt_name == "publ_salt" and publ_salt: return publ_salt
+                elif salt_name == "publ_salt" and publ_salt: return publ_salt
 
-            elif salt_name == "priv_salt" and priv_salt is None:
-                salt = secrets.token_bytes(16)
-                cursor.execute("UPDATE users SET priv_salt = ? WHERE username = ?",(salt, self.username,))
-                conn.commit()
+                elif salt_name == "priv_salt" and priv_salt is None:
+                    salt = secrets.token_bytes(16)
+                    cursor.execute("UPDATE users SET priv_salt = ? WHERE username = ?",(salt, self.username,))
+                    conn.commit()
 
-            elif salt_name == "priv_salt" and priv_salt: return priv_salt
+                elif salt_name == "priv_salt" and priv_salt: return priv_salt
 
-            return salt
+                return salt
         
-        cursor.execute("SELECT publ_pass FROM users WHERE username = ?", (self.username,))
-        password = cursor.fetchone()[0]
+
+        with sqlite3.connect(self.dir_db) as conn:
+
+            cursor = conn.cursor()
+            cursor.execute("SELECT publ_pass FROM users WHERE username = ?", (self.username,))
+            password = cursor.fetchone()[0]
 
         try:
             pass_hash.verify(password, self.temp_pass)
@@ -187,6 +205,7 @@ class Account:
         self.username = username
         self.password = password
         self.priv_pass = priv_pass
+        self.dir_db = Path(__file__).parent / "credentials.db"
 
     def create_account(self):
         """
@@ -201,18 +220,26 @@ class Account:
         }
 
         try:
-            cursor.execute("SELECT username FROM users WHERE username = ?", (credentials["username"],))
-            existing_user = cursor.fetchone()
-            if existing_user:
-                raise UsernameAlreadyExists
 
-            cursor.execute("""
-                            INSERT INTO users(username, publ_pass, priv_pass) VALUES (?, ?, ?)""",
-                           (credentials["username"], credentials["password"], credentials["priv_pass"]))
+            with sqlite3.connect(self.dir_db) as conn:
 
-            conn.commit()
+                cursor = conn.cursor()
 
-            directory_all = Path(__file__).parent / self.username
+                cursor.execute("SELECT username FROM users WHERE username = ?", (credentials["username"],))
+                existing_user = cursor.fetchone()
+                if existing_user:
+                    raise UsernameAlreadyExists
+
+                cursor.execute("""
+                                INSERT INTO users(username, publ_pass, priv_pass) VALUES (?, ?, ?)""",
+                               (credentials["username"], credentials["password"], credentials["priv_pass"]))
+
+                conn.commit()
+
+            directory_users = Path(__file__).parent / "users" 
+            directory_users.mkdir(exist_ok=True)
+            
+            directory_all = directory_users / self.username
             directory_all.mkdir(exist_ok=True)
 
             directory_logs = directory_all / "logs"  
@@ -273,8 +300,12 @@ class Account:
         """
         
         try:
-            cursor.execute("SELECT username, publ_pass FROM users WHERE username = ?", (self.username,))
-            credentials = cursor.fetchone()
+
+            with sqlite3.connect(self.dir_db) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT username, publ_pass FROM users WHERE username = ?", (self.username,))
+                credentials = cursor.fetchone()
+
             credentials = {
                             "username": credentials[0],
                             "password": credentials[1]
@@ -301,8 +332,10 @@ class Account:
         Verify the real identity of the user through the password for private notes.
         """
         
-        cursor.execute("SELECT priv_pass FROM users WHERE username = ?", (self.username,))
-        result = cursor.fetchone()
+        with sqlite3.connect(self.dir_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT priv_pass FROM users WHERE username = ?", (self.username,))
+            result = cursor.fetchone()
 
         if result is None:
             logging.error(f"User '{self.username}' not found or private password not set.")

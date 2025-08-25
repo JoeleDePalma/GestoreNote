@@ -413,16 +413,19 @@ class signin_window(QWidget):
 
         if not self.verified_account:
             self.username_exists_warning.setVisible(True)
-            self.username_input_box.setStyleSheet(self.warning_style_css)
+            if not self.night_mode_on: self.username_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+            else: self.username_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
             return
 
         # Creates the directories
-        directory_all = Path(__file__).parent.parent / self.username_input
+        directory_users = Path(__file__).parent.parent / "users"
+        directory_all = directory_users / self.username_input
         notes_directory = directory_all / "notes"
         logs_directory = directory_all / "logs"
         private_notes_directory = notes_directory / "private"
         public_notes_directory = notes_directory / "public"
 
+        directory_users.mkdir(parents=True, exist_ok=True)
         directory_all.mkdir(parents=True, exist_ok=True)
         notes_directory.mkdir(parents=True, exist_ok=True)
         logs_directory.mkdir(parents=True, exist_ok=True)
@@ -599,8 +602,8 @@ class signin_window(QWidget):
 
             if self.valid_priv_pass:
 
-                if not self.night_mode_on: self.username_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_day))
-                if self.night_mode_on: self.username_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_night))
+                if not self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_day))
+                if self.night_mode_on: self.priv_pass_input_box.setStyleSheet(self.cansign_style_css.format(**self.input_style_night))
 
             if self.valid_password and self.valid_username and self.valid_priv_pass:
                 self.signin_button.setEnabled(True)

@@ -288,7 +288,7 @@ class menu_window(QWidget):
         self.toolbar_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
         # Notes layout
-        self.notes_directory = Path(__file__).parent.parent / self.username / "notes"
+        self.notes_directory = Path(__file__).parent.parent / "users" / self.username / "notes"
         self.notes_buttons = [[], []]
 
         self.notes_layout = QVBoxLayout()
@@ -363,6 +363,23 @@ class menu_window(QWidget):
         """
         Adds or modify the notes layout with notes buttons
         """
+
+        # Verify the existence of the notes directoriess, if not, creates them
+        public_dir = self.notes_directory / "public"
+        private_dir = self.notes_directory / "private"
+
+        if not public_dir.exists():
+            print(f"Directory pubblica non trovata: {public_dir}")
+            self.notes_text_box.setPlaceholderText("La directory degli appunti pubblici non esiste.")
+            os.mkdir(public_dir)
+            return
+
+        if not private_dir.exists():
+            print(f"Directory privata non trovata: {private_dir}")
+            self.notes_text_box.setPlaceholderText("La directory degli appunti privati non esiste.")
+            os.mkdir(private_dir)
+            return
+
         self.public_notes = os.listdir(self.notes_directory/"public")
         self.private_notes = os.listdir(self.notes_directory/"private")
         self.sep_notes_list = [self.public_notes, self.private_notes]
@@ -588,7 +605,7 @@ Per verificare la tua identità, vai nelle impostazioni e clicca su "Verifica"''
         Shows in the notes text box the content of the note selected.
         """
 
-        self.note = functions.FileNotes(Path(__file__).parent.parent / self.username / "notes" / state / note_name)
+        self.note = functions.FileNotes(Path(__file__).parent.parent / "users" / self.username / "notes" / state / note_name)
         self.notes_opened = note_name
         self.notes_opened_state = state
 

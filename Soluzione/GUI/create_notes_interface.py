@@ -128,8 +128,8 @@ class create_notes_window(QWidget):
 
         self.note_title_input_box.setPlaceholderText("Titolo della nota")
         self.note_title_input_box.setFixedSize(350, 60)
-        self.save_private_button.setFixedSize(175, 40)
         
+        self.save_private_button.setFixedSize(175, 40)
         self.save_private_button.clicked.connect(lambda: self.create_notes(f"{self.note_title_input_box.text().strip()}.txt", public=False))
 
         self.save_public_button.setFixedSize(175, 40)
@@ -214,11 +214,11 @@ class create_notes_window(QWidget):
 
     def create_notes(self, notes_name, public):
         if public:
-            file = functions.FileNotes(Path(__file__).parent.parent / self.username / "notes" / "public" / notes_name)
+            file = functions.FileNotes(Path(__file__).parent.parent / "users" /self.username / "notes" / "public" / notes_name)
             created = file.create()
 
         else: 
-            file = functions.FileNotes(Path(__file__).parent.parent / self.username / "notes" / "private" / notes_name)
+            file = functions.FileNotes(Path(__file__).parent.parent / "users" /self.username / "notes" / "private" / notes_name)
             created = file.create()
 
         if created:
