@@ -11,7 +11,7 @@ import os
 
 from PySide6.QtWidgets import QApplication, QTextEdit, QLineEdit, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 
 class rename_notes_window(QWidget):
 
@@ -31,7 +31,13 @@ class rename_notes_window(QWidget):
         # Window initialization
         self.setWindowTitle("Rinomina note")
         self.setFixedSize(400, 250)
-        self.setStyleSheet("background-color: #f2f2f2;")
+
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
 
 
         # Input camps and texts initialization
@@ -153,6 +159,7 @@ class rename_notes_window(QWidget):
                             border: 1px solid #ccc;
                             border-radius: 10px;
                             color: black;
+                            padding-left: 3px;
                             
                                                 """)
             
@@ -168,6 +175,7 @@ class rename_notes_window(QWidget):
                             border: 1px solid #5A5A5C;
                             font-size: 16px;
                             border-radius: 10px;
+                            padding-left: 3px;
                             
                                                 """)
 

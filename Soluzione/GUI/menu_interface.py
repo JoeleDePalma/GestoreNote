@@ -12,7 +12,7 @@ spec.loader.exec_module(functions)
 
 from PySide6.QtWidgets import QApplication, QToolBar, QLineEdit, QTextEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QPoint
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 import sqlite3
 import os
 
@@ -38,6 +38,13 @@ class menu_window(QWidget):
         self.setWindowTitle("Menu")
         self.setFixedSize(1000, 600)
         self.setStyleSheet("background-color: #f2f2f2;")
+
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
         
         # Initialization variables
 
@@ -196,7 +203,7 @@ class menu_window(QWidget):
 
         self.toolbar_close_button = QPushButton("❌ Chiudi")
         self.toolbar_list.append(self.toolbar_close_button)
-        
+
 
         if self.account_verified:
             self.toolbar_settings_verify = QPushButton(QIcon(str(images_path / "verified_icon.png")), " Verificato")
@@ -210,6 +217,8 @@ class menu_window(QWidget):
         self.toolbar_settings_exit = QPushButton(QIcon(str(images_path / "exit_icon.jpg")), "Esci")
         self.tools_settings_list.append(self.toolbar_settings_exit)
 
+        self.toolbar_settings_advanced = QPushButton("Avanzate")
+        self.tools_settings_list.append(self.toolbar_settings_advanced)
 
         self.notes_text_box = QTextEdit()
 

@@ -138,7 +138,7 @@ class Cryptography():
             pass_hash.verify(password, self.temp_pass)
             self.salt = control_salt("publ_salt")
 
-        except Exception:
+        except exceptions.VerifyMismatchError:
             self.salt = control_salt("priv_salt")
 
         self.key = self.derive_key(password, self.salt)

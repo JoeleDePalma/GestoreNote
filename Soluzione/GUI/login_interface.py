@@ -12,7 +12,7 @@ spec.loader.exec_module(functions)
 
 from PySide6.QtWidgets import QLineEdit, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 
 images_path = Path(__file__).parent / "Images"
 
@@ -36,6 +36,12 @@ class login_window(QWidget):
         self.setWindowTitle("Accedi")
         self.setFixedSize(500, 650)
 
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
 
         # Input camps and texts initialization
         self.welcomeback_text = QLabel("Bentornato!")
@@ -67,6 +73,7 @@ class login_window(QWidget):
                                         border: 1px solid {border_color};
                                         border-radius: 12px;
                                         color: {text_color};
+                                        padding-left: 3px;
                                     }}
                                     """
 
@@ -93,17 +100,8 @@ class login_window(QWidget):
                                     font-family: Arial;
                                     border: 1px solid red;
                                     border-radius: 12px;
+                                    padding-left: 3px;
             
-                                """
-
-        self.cansign_style_css = """
-                
-                                    background-color: white; 
-                                    font-size: 16px;
-                                    font-family: Arial;
-                                    border: 1px solid green;
-                                    border-radius: 12px;
-
                                 """
 
         self.warning_text_css = """

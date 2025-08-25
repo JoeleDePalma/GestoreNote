@@ -9,7 +9,7 @@ spec.loader.exec_module(functions)
 
 from PySide6.QtWidgets import QApplication, QLineEdit, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 
 class create_notes_window(QWidget):
     def __init__(self, username, public_cryptography, private_cryptography, account_verified, night_mode_on):
@@ -25,7 +25,13 @@ class create_notes_window(QWidget):
         # Window initialization
         self.setWindowTitle("Crea note")
         self.setFixedSize(400, 250)
-        self.setStyleSheet("background-color: #f2f2f2;")
+
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
 
         # Input camps and texts initialization
         self.note_title_input_box = QLineEdit()
@@ -157,7 +163,7 @@ class create_notes_window(QWidget):
                             border-radius: 20px;
                             margin-bottom: 20px;
                             color: black;
-        
+                            padding-left: 3px;
                             
                                                 """)
 
@@ -180,8 +186,8 @@ class create_notes_window(QWidget):
                             border-radius: 20px;
                             margin-bottom: 20px;
                             color: white;
-        
-                            
+                            padding-left: 3px;
+
                                                 """)
 
         # Layout Initialization

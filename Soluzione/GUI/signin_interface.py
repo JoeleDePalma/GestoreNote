@@ -1,5 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 
+from PySide6.QtGui import QIcon, QGuiApplication
 import importlib.util
 from pathlib import Path
 
@@ -14,7 +15,7 @@ spec.loader.exec_module(functions)
 
 from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
 from PySide6.QtCore import QLine, Qt, QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 import re
 
 images_path = Path(__file__).parent / "Images"
@@ -40,6 +41,12 @@ class signin_window(QWidget):
         self.setWindowTitle("Registrati")
         self.setFixedSize(500, 650)
         
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
 
         # Input camps and texts initialization
         self.welcome_text = QLabel("Benvenuto!")
@@ -81,6 +88,7 @@ class signin_window(QWidget):
                                         border: 1px solid {border_color};
                                         border-radius: 12px;
                                         color: {text_color};
+                                        padding-left: 3px;
                                     }}
                                     """
 
@@ -109,6 +117,7 @@ class signin_window(QWidget):
                                     font-family: Arial;
                                     border: 1px solid red;
                                     border-radius: 12px;
+                                    padding-left: 3px;
                                     }}
 
                                 """
@@ -122,6 +131,7 @@ class signin_window(QWidget):
                                     font-family: Arial;
                                     border: 1px solid green;
                                     border-radius: 12px;
+                                    padding-left: 3px;
                                     }}
 
                                 """

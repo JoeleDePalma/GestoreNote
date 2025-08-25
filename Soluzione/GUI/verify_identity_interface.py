@@ -12,7 +12,7 @@ spec.loader.exec_module(functions)
 
 from PySide6.QtWidgets import QApplication, QLineEdit, QSpacerItem, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QSizePolicy
 from PySide6.QtCore import QLine, Qt, QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QGuiApplication
 
 images_path = Path(__file__).parent / "Images"
 
@@ -36,7 +36,13 @@ class verify_identity_window(QWidget):
         # Window initialization
         self.setWindowTitle("Verifica account")
         self.setFixedSize(500, 650)
-        self.setStyleSheet("background-color: #f2f2f2;")
+
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+
+        self.move(x, y)
 
 
         # Input camps and texts initialization
@@ -92,28 +98,36 @@ class verify_identity_window(QWidget):
                                         border: 1px solid {border_color};
                                         border-radius: 12px;
                                         color: {text_color};
+                                        padding-left: 3px;
             
                                     """
 
         self.warning_style_css = """
             
-                                    background-color: white; 
+                                    QLineEdit
+                                    {{
+                                    background-color: {background_color}; 
                                     font-size: 16px;
                                     font-family: Arial;
                                     border: 1px solid red;
                                     border-radius: 12px;
+                                    }}
+
+                                """
+
+        self.input_style_day = dict(
             
-                                """
+            background_color = "white",
+            text_color = "black"
+            
+                            )
 
-        self.cansign_style_css = """
-                
-                                    background-color: white; 
-                                    font-size: 16px;
-                                    font-family: Arial;
-                                    border: 1px solid green;
-                                    border-radius: 12px;
-
-                                """
+        self.input_style_night = dict(
+            
+            background_color= "#3A3A3C",
+            text_color = "white"
+            
+                            )
 
         self.warning_text_css = """
                                 
@@ -362,7 +376,10 @@ class verify_identity_window(QWidget):
                 menu_win.show()
                 self.close()
 
-            else: self.warning_text.setVisible(True); self.password_input_box.setStyleSheet(self.warning_style_css)
+            else: 
+                self.warning_text.setVisible(True); 
+                if not self.night_mode_on: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_day))
+                else: self.password_input_box.setStyleSheet(self.warning_style_css.format(**self.input_style_night))
 
         else:
             self.warning_text.setVisible(False)
